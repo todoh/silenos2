@@ -1,0 +1,2192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7393544781642897"
+crossorigin="anonymous"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Silenos Versión 1.1.13</title>
+<link rel="stylesheet" href="r-style.css">
+
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles2.css">
+<link rel="stylesheet" href="clarooscuro.css">
+<link rel="stylesheet" href="momentos.css">
+<link rel="stylesheet" href="editor-momento.css">
+
+<link rel="stylesheet" href="biblioteca.css">
+
+<link rel="stylesheet" href="animacionessvg.css">
+<link rel="stylesheet" href="rpgmaker.css">
+<link rel="stylesheet" href="ultimosajustes.css">
+
+<link rel="stylesheet" href="interactivo.css">
+<link rel="stylesheet" href="ventanas.css">
+<link rel="stylesheet" href="p-style.css">
+<link rel="stylesheet" href="editor.css">
+<link rel="stylesheet" href="galeria.css">
+
+<!-- Hoja de estilos para el nuevo editor de datos -->
+<link rel="stylesheet" href="editor-personajes.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>S</text></svg>">
+<link rel="stylesheet" href="asistente.css">
+  
+<script src="https://unpkg.com/gifler@0.1.0/gifler.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+
+<!-- Hoja de estilos para el nuevo
+<script src="https://apis.google.com/js/api.js" async defer></script>
+<script src="https://accounts.google.com/gsi/client" onload="gapiLoaded()" async defer></script> 
+
+<script src="https://www.webrtc-experiment.com/RecordRTC.js"></script>
+
+
+editor de datos -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<meta property="og:title" content="SILENOS Versión 1.1.13" />
+<meta property="og:description" content="Editor de Historia con Inteligencia Artificial" />
+<meta property="og:url" content="https://todoh.github.io/SILENOS" />
+<meta property="og:image" content="https://raw.githubusercontent.com/todoh/SILENOS/refs/heads/main/silenos.png" />
+    <script type="module" src="firebase.js"></script>
+
+</head>
+<body class="clear-view-mode">
+  
+    <script>
+ // document.addEventListener('contextmenu', function(event) {
+   // event.preventDefault();
+ // });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<script src="principio.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+
+<div id="silenos" >
+    <div id="opciones" >
+        <h2 id="titulo-proyecto" style="display: none;" contenteditable="true" placeholder="Escribe el título del proyecto">Nombre De Tu Proyecto</h2>
+        <div id="menu" >
+             <div id="carpeta" style="margin-top: 20px; display: none; padding: 10px; border: 1px solid #ccc; border-radius: 5px; max-height: 300px; overflow-y: auto;">
+
+        </div>
+    </div>
+ 
+    </div>
+
+<button id="asistente-btn" title="Asistente IA">S</button>
+<div id="asistente-popup">
+    <div id="asistente-menu">
+           <div class="asistente-categoria">
+           
+            <button   id="bguardarjson" class="tons" onclick="guardarJSON()">💾Guardar</button>       
+             <input type="file" id="file-load" accept="application/json" onchange="cargarJSON(event)" style="display: none;">
+            <button   id="bcargarjson" class="tons" onclick="document.getElementById('file-load').click()">🗂️Cargar</button>        
+            <button  id="btema" class="tons" id="theme-toggle-button" onclick="toggleTheme()">🌙</button>
+            <button id="bvista" class="tons" title="Cambiar a Vista Clara">🔳</button>
+            <button id="bajustes" class="tons" onclick="abrirModalConfig()">⚙️Configuración</button>
+            <button class="pro" onclick="abrirModalExportar()"  >💽 Exportar</button>
+        </div>
+        <div class="asistente-categoria">
+            <button id="bproyecto" class="tons" onclick="abrirVentana('proyecto');">🏗️Proyecto</button>
+             <button id="bdatos" class="tons" onclick="abrirVentana('personajes');">🗂️Datos</button> 
+             <button id="bdatos" class="tons" onclick="abrirVentana('procedimiento');">Procedimiento</button> 
+        </div>
+
+ 
+
+        <div class="asistente-categoria">
+            <button id="bguion" class="tons" onclick="abrirVentana('guion-literario');">📜Guión</button>
+            <button id="blibros" class="tons" onclick="abrirVentana('capitulosh');">📚Libro</button>
+                        <button class="tons" onclick="abrirVentana('escenah');"    >🎬Storyboard</button>
+
+        </div>
+        <div class="asistente-categoria">
+            <button class="tons" onclick="abrirVentana('diapositivas');"  style="display: none;">🤳Diapositivas</button>
+            <button id="biblioteca-btn" class="tons" onclick="abrirVentana('biblioteca');"  style="display: none;">🖼️Galería</button>
+        </div>
+        
+       <div class="asistente-categoria">                 
+    
+            <button id="beditor" class="tons" onclick="abrirVentana('editor2');"  style="display: none;" >📝Editor</button> 
+            <button class="tons" onclick="abrirVentana('programador');"  >💻Programador</button>  
+            <button id="bdatos" class="tons" onclick="abrirVentana('renderizador');">🎨Renderizador</button> 
+            <button class="tons" onclick="abrirVentana('interactivo');"   >🎮Videojuego</button>
+            <button class="tons" onclick="abrirVentana('momentos');"    >Librojuego</button>
+
+        </div>
+     
+
+
+            <button class="tons"  onclick="abrirVentana('vistageneral');"style="display: none;">Vista General</button>
+            <div id="removidos"  style="display: none;">
+            <button class="tons" onclick="abrirVentana('animacionessvg');"style="display: none;">🎬 Animación</button>
+            <button class="tons" onclick="abrirVentana('imagenes');" style="display: none;" >Imagenes</button>
+            <button class="tons" onclick="abrirVentana('animaciones');"  style="display: none;"">Animaciones</button>
+            <button class="tons" id="pelicula" onclick="abrirVentana('galeria');" style="display: none;" >Pelicula</button>
+            <button class="tons" onclick="abrirVentana('momentos');"  style="display: none;"  >Librojuego</button>
+            <button class="tons" onclick="abrirVentana('juego');"  style="display: none;">Juego</button>
+            <button class="tons" onclick="abrirVentana('rpgmaker');" style="display: none;">RPG Maker</button>
+            
+            <button class="tons"  style="display: none;" onclick="abrirVentana('biblioteca');">📚 Biblioteca</button>
+            <button class="pro" onclick="abrirModalExportar()" style="display: none;">💽 Exportar</button>
+        <button id="bajustes" class="pro" onclick="abrirModalConfig()">⚙️ Ajustes </button>
+        <button id="bguardarjson" class="pro" onclick="guardarJSON()">💾 Guardar</button>
+        <button id="bcargarjson" class="pro" onclick="document.getElementById('file-load').click()">🗂️ Cargar</button>        
+        <button id="btema" class="pro" id="theme-toggle-button" onclick="toggleTheme()">🌙 Tema</button>
+            </div>
+            
+
+    </div>
+</div>
+<div id="biblioteca" class="pantalla" data-titulo="Biblioteca" style="display: none;" >
+       <div id="biblioteca-controles">
+        <button id="descargar-zip-btn" class="pro6">📥</button>
+    </div>
+    <div id="biblioteca-grid"></div>
+</div>
+<div id="diapositivas" class="pantalla" data-titulo="Diapositivas" style="display: none;" >
+  <div class="w-full lg:w-1/3 xl:w-1/4 p-4 overflow-y-auto flex flex-col">
+     
+
+        <div class="flex-grow flex flex-col space-y-4">
+            <div class="flex-grow flex flex-col">
+                <label for="main-script-input" class="block text-sm font-medium text-gray-300 mb-2">1. Escribe el guion completo aquí</label>
+                <textarea id="main-script-input" rows="10" class="flex-grow block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm p-3"></textarea>
+            </div>
+
+            <div>
+                <label for="image-gallery-input" class="block text-sm font-medium text-gray-300 mb-2">2. Sube una o varias imágenes</label>
+                <input type="file" id="image-gallery-input" accept="image/*" multiple class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100">
+                <div id="image-thumbnail-container" class="mt-4 bg-gray-800 p-3 rounded-lg min-h-[120px]">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full lg:w-2/3 xl:w-3/4 bg-gray-800 flex flex-col items-center justify-center p-4 lg:p-8">
+        <div class="w-full max-w-sm">
+            <div class="bg-black rounded-xl shadow-2xl overflow-hidden aspect-9-16">
+                <canvas id="preview-canvas" class="w-full h-full"></canvas>
+            </div>
+        </div>
+        <div id="status" class="mt-4 text-center text-gray-400 h-6"></div>
+        <div class="mt-4 flex flex-wrap gap-3 justify-center">
+            <button id="start-record-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200">
+                Generar y Grabar Video
+            </button>
+            <button id="stop-record-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 hidden">
+                Detener Grabación
+            </button>
+        </div>
+        <a id="download-link" class="hidden mt-6 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 text-center">
+            Descargar Video MP4
+        </a>
+    </div>
+
+
+
+</div> 
+
+<div id="gestor-ventanas">
+    <h3>Ventanas Abiertas</h3>
+    <ul id="lista-ventanas"></ul>
+</div>
+
+<div id="interactivo" class="pantalla" data-titulo="Videojuego" >
+
+<div class="editor-container2">
+    <header>
+        <h1>Editor de Juego</h1>
+        <nav id="main-nav">
+            <button data-tab="settings" class="active">Configuración</button>
+            <button data-tab="locations">Ubicaciones</button>
+            <button data-tab="npcs">NPCs</button>
+            <button data-tab="items">Objetos</button>
+            <button data-tab="cards">Cartas</button>
+            <button data-tab="io">Importar/Exportar</button>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Tab: Configuración -->
+        <div id="tab-settings" class="tab-content active">
+            <h2>Configuración General del Juego</h2>
+            <p>Define los parámetros iniciales y las reglas globales de tu juego.</p>
+            <div id="settings-form" class="form-grid">
+                <!-- El contenido del formulario de configuración se inyectará aquí -->
+            </div>
+        </div>
+
+        <!-- Tab: Ubicaciones -->
+        <div id="tab-locations" class="tab-content">
+            <h2>Gestionar Ubicaciones</h2>
+            <p>Define las diferentes áreas y escenas de tu mundo.</p>
+            <ul id="locations-list" class="item-list"></ul>
+            <button id="btn-add-location" class="btn btn-add">Añadir Nueva Ubicación</button>
+        </div>
+
+        <!-- Tab: NPCs -->
+        <div id="tab-npcs" class="tab-content">
+            <h2>Gestionar NPCs</h2>
+            <p>Crea y edita los personajes que pueblan tu mundo.</p>
+            <ul id="npcs-list" class="item-list"></ul>
+            <button id="btn-add-npc" class="btn btn-add">Añadir Nuevo NPC</button>
+        </div>
+
+        <!-- Tab: Objetos -->
+        <div id="tab-items" class="tab-content">
+            <h2>Gestionar Objetos</h2>
+            <p>Define los objetos que los jugadores pueden encontrar y usar.</p>
+            <ul id="items-list" class="item-list"></ul>
+            <button id="btn-add-item" class="btn btn-add">Añadir Nuevo Objeto</button>
+        </div>
+
+        <!-- Tab: Cartas -->
+        <div id="tab-cards" class="tab-content">
+            <h2>Gestionar Cartas</h2>
+            <p>Define las cartas de combate con sus atributos.</p>
+            <ul id="cards-list" class="item-list"></ul>
+            <button id="btn-add-card" class="btn btn-add">Añadir Nueva Carta</button>
+        </div>
+
+        <!-- Tab: Import/Export -->
+        <div id="tab-io" class="tab-content">
+            <h2>Importar y Exportar Datos</h2>
+            <p>Carga tu archivo `datos.js` existente o exporta tu trabajo.</p>
+            <div id="import-export-area">
+    <div class="form-group">
+        <label for="io-data">Contenido de datos.js</label>
+        <textarea id="io-data" placeholder="Pega aquí el contenido de tu archivo datos.js para cargarlo..."></textarea>
+    </div>
+    <div class="io-buttons">
+        <button id="btn-load-data" class="btn btn-edit">Cargar Datos</button>
+        <button id="btn-export-data" class="btn">Exportar solo datos.js</button>
+    </div>
+    <div id="export-game-container" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+        <p>Exporta todo tu proyecto a un único archivo HTML jugable.</p>
+        <button id="btn-export-game" class="btn btn-add" style="width: 100%; padding: 15px; font-size: 1.2em;">Exportar Juego Completo</button>
+    </div>
+</div>
+        </div>
+    </main>
+</div>
+
+
+
+</div>
+
+<div id="googlde-auth-container"></div>
+
+<div id="rpgmaker" class="pantalla" data-titulo="RPG Maker">
+    <!-- Controles de Partida y Exportación -->
+   
+</div>
+
+<div id="animaciones" class="pantalla" data-titulo="🎬 Animación 3D" style="display: none;">
+    <div class="contenedor-principal" style="display: flex; flex-direction: column; height: 100%; padding: 1rem; box-sizing: border-box;">
+
+        <header class="text-center mb-4">
+        
+      
+        </header>
+
+        <main class="contenido-principal" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; flex-grow: 1;">
+
+            <div class="columnas"  >
+                
+                <div id="script-section" class="seccion" style="display: flex; flex-direction: column; flex-grow: 1;">
+            
+                    <textarea id="script-input" class="area-texto" style="flex-grow: 1; resize: none;" placeholder="Ej: Un gorila entra por la izquierda. Un mago entra por la derecha. El gorila mira al mago y le habla. El mago salta."></textarea>
+                    <button id="analyze-button" class="boton boton-analizar">
+                        <svg id="analyze-icon" class="boton-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <svg id="loading-spinner" class="spinner-carga oculto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Analizar Guion
+                    </button>
+                </div>
+
+                <div id="elements-section" class="seccion2 oculto" style="display: flex; flex-direction: column;">
+           
+                    <div id="elements-list" class="lista-elementos" style="overflow-y: auto; padding: 0.5rem;"></div>
+                </div>
+
+                 <div id="error-message" class="mensaje-error oculto" role="alert">
+                    <strong class="mensaje-error-titulo">¡Error!</strong>
+                    <span id="error-text"></span>
+                </div>
+
+            </div>
+
+            <div class="columna"  >
+         
+                
+                <div id="canvas-container" >
+                    <div id="three-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+                    <canvas id="scene-canvas" class="oculto" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent;"></canvas>
+                    <div id="canvas-placeholder" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #6b7280;">
+                        <span>La escena se renderizará aquí</span>
+                    </div>
+                </div>
+
+                <button id="render-button" class="boton boton-renderizar pro5" disabled>
+                    Renderizar Escena
+                </button>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div id="imagenes" class="pantalla" data-titulo="Generador de Imágenes" style="display: none;">
+    <div class="container">
+        <!-- Interruptor 2D/3D -->
+        <div class="image-mode-toggle">
+            <button id="toggle-2d-btn" class="active">2D</button>
+            <button id="toggle-3d-btn">3D</button>
+        </div>
+
+        <!-- Panel de control 2D (existente) -->
+        <div class="control-panel" id="control-panel-2d">
+          
+            <div class="json-importer-container">
+                <h3>Importar desde JSON</h3>
+                <textarea id="json-input-area" placeholder="Pega aquí el JSON de uno o varios elementos..." class="area-texto"></textarea>
+                <div class="json-buttons-container">
+                    <button id="btn-process-json" class="control-button">Procesar JSON Pegado</button>
+                    <label for="json-file-input" class="control-button">Cargar Archivo JSON</label>
+                    <input type="file" id="json-file-input" accept=".json,application/json" style="display: none;">
+                </div>
+            </div>
+ 
+            
+           
+            
+        </div>
+        
+
+
+        <!-- Nuevo Panel de control 3D -->
+        <div class="control-panel" id="control-panel-3d" style="display: none;">
+<div id="generador-3d-panel" class="generador-panel">
+            <h3>Generador 3D</h3>
+            <div class="prompt-section">
+                <textarea id="user-prompt-input-3d" placeholder="Describe la escena 3D que quieres crear... por ejemplo: 'un cohete rojo y blanco en el centro, y un pequeño planeta azul a su derecha'"></textarea>
+                <button id="btn-generate-3d" class="btn-icon" title="Generar Escena 3D">
+                   Generar 3D
+                     
+                </button>
+            </div>
+            <div id="render-container-3d" style="width: 100%; height: 400px; position: relative; border-radius: 8px; overflow: hidden;">
+                <canvas id="render-canvas-3d"></canvas>
+                <div id="status-message-3d" class="status-message">Esperando prompt...</div>
+             <button id="btn-save-generation-3d" class="btn-primary">Guardar Generación</button></div>
+            
+            <div class="actions-section">
+               
+            </div>
+        </div>
+
+
+         
+   
+   
+   
+        </div>
+
+        <div id="generaciones-container" style="display: none;">
+            <div id="generaciones-grid">
+                </div>
+        </div>
+    </div>
+</div>
+
+<div id="momentos" class="pantalla" data-titulo="Aventura Interactiva">
+ <button class="pro17"  title="Ilustrar todo"  onclick="ilustrarTodoEnParaleloPorLotes()" >🖌️</button>
+  <button class="pro18"  title="Ilustrar todo"  onclick="generacionLoteMomentos()" style="display: none;">🎨</button>
+
+    <button class="pro16"  title="Acción contextual"  onclick="abrirModalMomentosIA()" >✨</button>
+
+    <button class="pro6" id="agregar-momento-btn">+</button>
+    <div id="momentos-controles-flotantes">
+        
+        <button class="pro" id="preview-connections-btn" title="Muestra u oculta las líneas de conexión entre momentos.">Previsualizar Conexiones</button>
+
+        <div class="control-group">
+            <button class="pro" id="zoom-out-btn" title="Alejar la vista">-</button>
+            <span id="zoom-level-indicator">100%</span>
+            <button class="pro" id="zoom-in-btn" title="Acercar la vista">+</button>
+        </div>
+
+        
+        <div id="momentos-controles-ia">
+            <button class="pro" id="generar-aventura-ia-btn" title="Usa la IA para generar una aventura interactiva completa a partir del guion seleccionado.">Generar Aventura con IA ✨</button>
+            <select id="guion-select" class="pro" title="Selecciona un guion para usar como base para la IA"></select>
+
+            <input type="number" id="ia-call-budget-input" class="pro ia-input-numero" min="5" max="100" value="15" title="Presupuesto de Llamadas a la IA. Define el número máximo de peticiones para crear y expandir ramas en la historia. Un número más alto crea una aventura más grande y compleja.">
+            </div>
+    </div>
+
+    <div id="momentos-lienzo-wrapper">
+        <div id="momentos-lienzo">
+            <svg id="connections-svg"></svg>
+        </div>
+    </div>
+    
+        <!-- NUEVO: Panel de Edición de Momentos -->
+    <div id="panel-edicion-momento">
+        <div class="panel-edicion-header">
+            <h3>Editar Momento</h3>
+            <button id="panel-edicion-cerrar-btn">&times;</button>
+        </div>
+        <div class="panel-edicion-contenido">
+            <input type="text" id="panel-editor-titulo" placeholder="Título del Momento">
+            <textarea id="panel-editor-descripcion" placeholder="Descripción..."></textarea>
+            <div id="panel-editor-drop-zone" class="drop-zone-estilo">
+                Arrastra una imagen aquí o haz clic
+                <img id="panel-editor-imagen-preview" alt="Vista previa de la imagen">
+                <input type="file" id="panel-editor-file-input" accept="image/*" style="display: none;">
+            </div>
+            
+            <!-- ===================================== -->
+            <!-- ELEMENTOS RESTAURADOS - ¡ESTO ES LO QUE FALTABA! -->
+            <!-- ===================================== -->
+            <div id="panel-acciones-container"></div>
+            <button id="panel-boton-agregar-accion" class="modal-button ">+ Acción</button>
+            
+        </div>
+    </div>
+
+
+</div>
+<div id="modal-overlay"></div>
+<div id="animacionessvg" class="pantalla" data-titulo="Animación SVG">
+    <!-- INICIO: Panel de Escenas Generadas (Pega esto en tu HTML) -->
+        <div id="ai-scenes-panel">
+            <h3>Escenas Generadas</h3>
+            <div id="ai-scenes-list">
+                <p class="empty-list-placeholder">Aún no se han generado escenas.</p>
+            </div>
+        </div>
+        <!-- FIN: Panel de Escenas Generadas -->
+    <div id="ai-animation-view">
+        
+        <div id="ai-prompt-panel">
+            <h3>Generador de Animación por IA</h3>
+            <p>Describe la animación que quieres crear. La IA usará los "Datos" existentes como personajes y generará una nueva escena animada.</p>
+            <textarea id="ai-prompt-input" placeholder="Ej: Un samurai llamado 'Kenshin' camina desde la izquierda. Un ninja llamado 'Hanzo' aparece a la derecha. Kenshin desenfunda su espada."></textarea>
+            <button id="ai-generate-button">✨ Generar Animación</button>
+            <div id="ai-status-container" style="display: none;"></div>
+        </div>
+
+        <div id="canvas-container">
+            <svg id="svg-canvas" width="100%" height="100%">
+                <g id="shapes-container"></g>
+                <g id="transform-controls" style="display: none;">
+                    <rect id="transform-box-outline"></rect>
+                    <g id="transform-handles">
+                        <rect class="handle resize-handle" data-handle="top-left" width="10" height="10"></rect>
+                        <rect class="handle resize-handle" data-handle="top-middle" width="10" height="10"></rect>
+                        <rect class="handle resize-handle" data-handle="top-right" width="10" height="10"></rect>
+                        <rect class="handle resize-handle" data-handle="middle-left" width="10" height="10"></rect>
+                        <rect class="handle resize-handle" data-handle="middle-right" width="10" height="10"></rect>
+                        <rect class="handle resize-handle" data-handle="bottom-left" width="10" height="10"></rect>
+                        <rect class="handle resize-handle" data-handle="bottom-middle" width="10" height="10"></rect>
+                        <rect class="handle resize-handle" data-handle="bottom-right" width="10" height="10"></rect>
+                        <line id="rotation-line"></line>
+                        <circle id="rotation-handle" class="handle" r="7"></circle>
+                    </g>
+                </g>
+            </svg>
+        </div>
+
+        <div id="selection-actions" class="hidden" style="position: absolute; top: 120px; left: 15px; display: flex; gap: 5px; background: rgba(240, 240, 240, 0.8); padding: 5px; border-radius: 5px; backdrop-filter: blur(4px);">
+            <input type="color" id="color-picker" title="Cambiar color">
+            <button id="flip-h-btn" title="Voltear Horizontal">↔</button>
+            <button id="flip-v-btn" title="Voltear Vertical">↕</button>
+            <button id="delete-btn" title="Eliminar">🗑️</button>
+        </div>
+        <footer>
+            <div>
+                <div class="controls-group">
+                    <button id="play-btn">Play</button>
+                    <button id="set-keyframe-btn" style="display: none;">Fijar Keyframe</button>
+                </div>
+                <div class="timeline-controls-group">
+                    <span id="time-label">0.0s</span>
+                    <input type="range" id="timeline-slider" min="0" max="5000" value="0">
+                </div>
+                <div class="duration-controls-group">
+                    <label for="duration-input">Duración (s):</label>
+                    <input type="number" id="duration-input" value="5" min="1">
+                </div>
+                 <button id="export-btn3" style="display: none;">Exportar SVG</button>
+            </div>
+        </footer>
+
+    </div>
+
+    <div id="toast"></div>
+    <div id="keyframe-menu" style="display: none;">
+        </div>
+    <div id="gestion-escenas-svg" style="display: none;">
+        </div>
+</div>
+
+<div id="juego" class="pantalla" data-titulo="Editor de Mundos" style="display: none; width: 100%; height: 100%;">
+    <div id="editor-container">
+        <header id="main-header">
+            <h1>Editor de Mundos</h1>
+            <div id="main-controls">
+                <div id="zoom-controls">
+                    <button id="zoom-out-button" class="zoom-btn">-</button>
+                    <button id="zoom-in-button" class="zoom-btn">+</button>
+                </div>
+                <button id="preview-button">🚀 Previsualizar</button> 
+           
+                <button id="save-button">💾 Guardar en Navegador</button>
+            </div>
+        </header>
+        <main id="main-content">
+            <aside id="side-panel">
+                <div id="texture-palette" class="palette">
+                    <h2>Texturas de Terreno</h2>
+                </div>
+                <div id="entity-palette" class="palette">
+                    <h2>Entidades</h2>
+                </div>
+                 <div id="info-box" class="palette">
+                    <h2>Información</h2>
+                    <p>Clic en una textura para pintar el terreno.</p>
+                    <p>Clic en una entidad y luego en un chunk para editarlo.</p>
+                </div>
+            </aside>
+            <div id="map-grid-container">
+                <div id="map-grid"></div>
+            </div>
+        </main>
+    </div>
+    <div id="preview-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content2">
+            <span class="modal-close-button">&times;</span>
+            <h3>Previsualización del Mundo 3D</h3>
+            <div id="game-container"></div>
+        </div>
+    </div>
+</div>
+
+<div id="proyecto" class="pantalla" data-titulo="Proyecto" style="display: none;" >
+
+
+ <div id="libroscreados" ></div>
+
+
+<button id="" class="  pro5 " onclick="crearNuevoLibro()" >+</button>
+</div>
+
+
+
+ <div id="vistageneral" class="pantalla" data-titulo="👁️ Vista General" >
+
+
+
+
+     <button  style="display: none;"  class="pro6" id="selector-general-btn-local">☰</button>
+    <!-- Encabezado y botón de acción -->
+    <div>
+        
+    
+        <button id="analizar-datos-btn" class="pro5" >
+            Analizar Datos
+        </button>
+    </div>
+
+
+
+    <div id="informe-container">
+ 
+      
+    </div>
+
+    
+<div id="vistageneral-secciones" >
+    <button class="pro6" onclick=" document.getElementById('informe-container').style.display = 'flex', document.getElementById('biblioteca').style.display = 'none'; " >📜</button>
+    <button class="pro7" onclick=" document.getElementById('informe-container').style.display = 'none', abrir('biblioteca'), document.getElementById('vistageneral').style.display = 'flex';  " >🖼️</button>
+
+</div>
+</div>
+<div id="modal-overlay"></div>
+<div id="guion-literario" class="pantalla" data-titulo="Guion">
+        <button class="pro17"  title="Acción contextual"  onclick="abrirModalIAHerramientas()" >✨</button>
+    <button class="pro6" id="selector-guion-btn-local">☰</button>
+        <button class="pro16" id="sumar-capitulo-guion" onclick="agregarCapituloYMostrar()">+</button>
+    <div id="guion-toolbar">
+        <!-- El botón para abrir el selector de guiones se mueve aquí -->
+        
+    </div>
+    <div id="guion-layout">
+        <!-- El índice lateral se elimina de la vista, pero el div se puede mantener para compatibilidad -->
+        <div id="indice-capitulos-guion" style="display: none;"></div>
+        
+        <!-- Contenedor para la lista emergente de guiones -->
+        <div id="lista-guiones-popup-local"></div>
+
+        <!-- El contenido del capítulo ahora ocupa más espacio -->
+        <div id="contenido-capitulo-activo">
+        </div>
+    </div>
+</div>
+
+<div id="ia" class="pantalla" data-titulo="Asistente IA de Guion" >
+    <div id="creasion" >
+        <button class="pro" onclick="cerrartodo(), abrir('capitulosh'), actualizarParametrosIA(), crearEscenasAutomaticamente(nombredelahistoria, cantidaddeescenas, cantidadframes);">Insertar Capítulos vacíos en la Historia</button>
+        <input type="text" id="nombrehistoria" placeholder="Nombre de las Escenas" value="Nombre de la Historia">
+        <input type="number" id="cantidadescenas" placeholder= "Cantidad de Escenas" value="2">
+        <input type="number" id="cantidadeframes" placeholder= "Cantidad de Frames" value="3">
+    </div>
+
+    <textarea id="gemini1"  placeholder="Escribe tu Historia..."></textarea>
+
+    <div id="chateo" >
+        <div id="ia-options">
+            <input type="checkbox" id="incluir-datos-ia" checked>
+            <label for="incluir-datos-ia">Usar Datos ya Guardados en la generación de la Historia</label>
+        </div>
+        <div id="ia-buttons">
+            <button id="enviargemini"  class="pro" onclick="actualizarParametrosIA(), enviarTextoConInstrucciones()">Generar Historia</button>
+            <button id="enviargemini-desarrollar"  class="pro" onclick="actualizarParametrosIA(), desarrollarFramesDesdeGeminimente(nombredelahistoria); cerrartodo(); abrir('capitulosh');">Insertar Frames en la Historia</button>
+        </div>
+    </div>
+
+    <div id="geminimente"></div>
+</div>
+
+
+<div id="editor" class="pantalla" data-titulo="💬 Chat" >
+      <p></p>
+      <p></p>
+      <p></p>
+<div id="chat"></div>
+<button onclick="herramientacopiar()"> 📥 </button><div id="herramienta" ></div>
+<textarea id="user-input" placeholder="Escribe tu mensaje..."></textarea>
+<button id="enviar" onclick="enviartexto()">Enviar</button>
+<div id="modos" ></div></div>
+
+<div id="escenah" class="pantalla" data-titulo="Storyboard">
+        <button class="pro17"  title="Acción contextual"  onclick="abrirModalGenerarStoryboardDesdeLibro()" >✨</button>
+  <button id="agregar-toma-btn" class="pro16 "  >+</button>
+    <button id="crear-escena-btn" class="pro6" onclick="abrirSelectorDeEscena(event)">🎬</button>
+    <div class="escena-toolbar">
+    
+        <select id="escenas-dropdown"></select>
+        <input type="text" id="escena-nombre-input" placeholder="Nombre de la Escena...">
+      
+    </div>
+    
+    <div id="tomas-timeline">
+        </div>
+</div>
+
+
+<div id="capitulosh" class="pantalla" data-titulo="Libro" style="display: none;" >
+<button style="display: none;" class="pro17"  title="Acción contextual"  onclick=" abrirModalSeleccionLibroParaFrames()" >✨</button>
+<button class="pro17"  title="Poblar libro desde un guion"  onclick="abrirModalPoblarLibro()" >✨</button>
+    <button id="selector-libro-btn" class="pro6" onclick="abrirSelectorDeLibro(event)">☰</button>
+    
+  
+
+    
+    <button class="pro16" id="sumarpersonaje" onclick="nuevaEscena()">📚</button>
+
+    <div id="capitulos">
+        <div id="lista-capitulos">
+            
+
+
+    </div>
+</div>
+
+<div id="selector-libro-popup" class="lista-guiones-popup-local" style="display: none;">
+    </div>
+
+
+
+</div>
+      
+
+<div id="procedimiento" class="pantalla" data-titulo="Automático">
+    <div class="procedimiento-container">
+       
+        <p>Escribe una idea, una frase o un párrafo. La IA creará una historia y luego podrá analizarla para extraer todos sus datos.</p>
+        <textarea id="prompt-procedimiento" placeholder="Ej: Un astronauta encuentra un misterioso cubo flotando cerca de Saturno..."></textarea>
+        
+        <button id="enviar-procedimiento"  onclick="" >✨ Generar Libro Ilustrado</button>
+        
+        <div id="resultado-procedimiento" style="width: 20%; height: 5% ; " >
+            </div>
+
+         
+    </div>
+<div id="resultadofinal-procedimiento" >
+         <img src="silenoscarga.gif" alt="">   </div>
+   <img class="gifs"  src="silenoscarga.gif" alt=""> 
+</div>
+
+
+
+<div id="renderizador" class="pantalla" data-titulo="Renderizador">
+    <div id="r-editor-container">
+        <header id="r-main-header">
+            <div id="r-main-controls">
+                <button id="r-import-character-buttonss" onclick=" autoLoadGameAssets()"  >👤 Actualizar Datos</button>
+
+
+               
+                <div id="r-zoom-controls">
+                    <button id="r-zoom-out-button" class="zoom-btn">-</button>
+                    <button id="r-zoom-in-button" class="zoom-btn">+</button>
+                </div>
+                
+                <button id="r-preview-button">🚀 Previsualizar</button>
+ 
+                     <button onclick="exportStandaloneHTML()" > Exportar Juego Completo </button>
+                <!-- BOTÓN DE GUARDADO ACTUALIZADO -->
+                <button id="r-save-button">💾 Guardar Mundo</button>
+                
+                <!-- NUEVO MENÚ DE CARGA -->
+                <select id="r-load-world-select" class="bg-gray-200 border border-gray-400 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Cargar Mundo...</option>
+                </select>
+
+                <!-- NUEVO BOTÓN PARA GUARDAR COMO DATO -->
+                <button id="r-save-to-character-btn">📦 Guardar como Dato</button>
+            </div>
+        </header>
+
+        <main id="r-main-content">
+            <aside id="r-side-panel">
+                <div id="r-texture-palette" class="palette"></div>
+                <div id="r-entity-palette" class="palette"></div>
+                <div id="r-info-box" class="palette"></div>
+            </aside>
+            <div id="r-map-grid-container">
+                <div id="r-map-grid"></div>
+            </div>
+        </main>
+
+        <div id="r-preview-modal" class="modal-overlay2">
+            <div class="modal-content2">
+                <span class="modal-close-button1">&times;</span>
+                   <button id="r-toggle-view-btn" style="padding: 8px 12px; background-color: #333; color: white; border: 1px solid #555; border-radius: 5px; cursor: pointer; visibility: visible; position: fixed; bottom: 10px; right: 50px; z-index: 1000000;">
+            Vista 1ª Persona
+        </button>
+                <h3>Previsualización 3D</h3>
+                <div id="r-game-container">
+                    <!-- El canvas de Three.js se insertará aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="r-character-modal-overlay">
+        <div class="character-modal-content">
+            <span class="character-modal-close-button">&times;</span>
+            <h3>Selecciona un Personaje para Importar</h3>
+            <div id="r-character-grid">
+                <!-- Los personajes se cargarán aquí dinámicamente -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="info"  class="pantalla" data-titulo="Info" >
+  
+ 
+
+ <p><span>S I L E N</span><span class="os-red"> O S</span> Versión 1.1.13</p>
+
+<p class="presentacion" > Silenos es un estudio creativo todo en uno para escritores, 
+    diseñadores de juegos y creadores de contenido que buscan una herramienta integrada que les lleve desde la conceptualización de una idea hasta la 
+    producción de una obra multimedia e interactiva, apoyándose fuertemente en la inteligencia artificial para acelerar y enriquecer el proceso creativo.</p>
+<p class="presentacion" >1. Da Vida a tus Guiones con un Co-creador Infatigable
+¿Tienes una idea brillante pero te bloqueas al estructurarla? Con nuestro generador de guiones, esa chispa inicial se convierte en una historia completamente desarrollada. Simplemente define tu premisa y observa cómo nuestra Inteligencia Artificial teje capítulos, escenas y diálogos coherentes, respetando los personajes y lugares de tu propio universo para mantener una consistencia perfecta. Olvídate del lienzo en blanco y deja que la IA construya los cimientos de tu guion, para que tú puedas dedicarte a pulir el alma y la emoción de tu relato.
+</p><div class="imagenes2" > <img src="guion.gif" alt="">
+</div>
+<p class="presentacion" >2. Crea Libros Ilustrados Completos en un Instante
+Imagina poder susurrar una frase y ver nacer un universo entero. Nuestro generador de libros ilustrados lleva la creación a un nuevo nivel de magia y automatización. Introduce un concepto, desde una idea fugaz hasta un párrafo detallado, y nuestra tecnología no solo escribirá una narrativa completa, sino que también la analizará para dar vida a sus personajes y escenarios con ilustraciones únicas y evocadoras. Es la herramienta definitiva para materializar tu visión, pasando de la concepción a un libro terminado e ilustrado en cuestión de minutos.
+</p>
+<div class="imagenes" > <img src="portada1.png" alt=""><img src="portada2.png" alt=""><img src="portada3.png" alt="">
+</div>
+
+<p class="presentacion" >3. Transforma tus Palabras en Arte Visual Impresionante
+Ponle rostro a tus héroes y paisajes a tus mundos. Nuestro generador de ilustraciones actúa como tu artista personal, convirtiendo descripciones textuales en impactantes imágenes en 2D y 3D. Ya no tienes que buscar imágenes que se parezcan a tu idea; ahora puedes crear la visión exacta que tienes en tu mente, desde el diseño de una armadura legendaria hasta la panorámica de una ciudad fantástica. Rompe las barreras del texto y muestra tu universo con una riqueza visual que cautivará a tu audiencia como nunca antes.</p>
+<div class="imagenes2" > <img src="im0.png" alt=""> <img src="im2.png" alt=""> <img src="im3.png" alt=""> <img src="im4.png" alt=""> <img src="im5.png" alt="">
+</div> 
+ 
+<p class="presentacion"  >4. Personaliza y Desbloquea Todo el Poder de la IA
+Para que la magia de la inteligencia artificial sea verdaderamente tuya, Silenos te da el control total. La aplicación se integra directamente con los servicios de IA de Google, y para activar estas funciones avanzadas, solo necesitas tu propia clave API gratuita de Google AI Studio. Dentro del panel de configuración, encontrarás un enlace directo para obtener tu clave y un campo para pegarla. Este simple paso asegura que el poder de generación de historias, ilustraciones y mundos funcione bajo tu cuenta, 
+dándote el control absoluto y permitiéndote dar rienda suelta a una creatividad sin límites y completamente personalizada.</p>
+<div class="imagenes2" > <img src="api.jpg" alt="">
+</div> 
+
+</div>
+
+
+
+
+ 
+
+ <div id="editor2" class="pantalla p-4 sm:p-8" data-titulo="Editor">
+    <div class="flex items-center justify-between mb-4">
+        <button id="e-guardar-receta-btn" class="pro16">
+            Guardar Composición
+        </button>
+        <select id="e-cargar-receta-select" class="pro17">
+            <option value="" disabled selected>Cargar composición...</option>
+        </select>
+    </div>
+ 
+    <div id="e-main-area" class="flex-1">
+        <div class="container mx-auto max-w-4xl p-4 sm:p-8">
+            <main id="e-editor-container" class="e-drop-container space-y-6 min-h-[50vh] rounded-xl transition-colors duration-300">
+                </main>
+        </div>
+    </div>
+    
+    <div class="space-y-4 max-w-2xl mx-auto p-4 border rounded-lg bg-gray-50 shadow-sm mt-8">
+      
+        <div class="flex items-center text-center">
+            <div class="flex-grow border-t border-gray-300"></div>
+            <span class="flex-shrink mx-4 text-gray-500 text-sm">O</span>
+            <div class="flex-grow border-t border-gray-300"></div>
+        </div>
+        <div class="flex items-center gap-4">
+            <label for="editor2-json-input" class="font-semibold text-gray-700 whitespace-nowrap">Carga un archivo:</label>
+            <input type="file" id="editor2-json-input" accept=".json" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+        </div>
+        <div class="text-center">
+            <button id="editor2-load-btn" class="pro5 mt-2">Cargar Composición</button>
+        </div>
+    </div>
+
+    <div id="carta" class="mt-8 space-y-6 bg-white p-6 rounded-lg shadow max-w-2xl mx-auto">
+    </div>
+
+   
+
+  <div class="menuu" >
+            
+            <textarea id="editor2-json-paste-area" rows="4" style="visibility: visible;" placeholder='Ejemplo: ["Aragorn", "Espada Andúril", "Minas Tirith"]'></textarea>
+        </div>
+</div>
+
+<div id="editor22" class="pantalla" data-titulo="Editor">
+    </div>
+<div id="catalogo" class="pantalla" data-titulo="Catalogo">
+    <div class="catalogolibros">
+       
+  
+        <div class="libroh" data-id="libro2" style="display: none;" >
+            <img src="catalogo/musa.png" alt="La Musa Lunar" />
+         
+            <div class="info-libro">
+                <h3>La Musa Lunar</h3>
+                <p>EL NODO DE LA LUZ ORDENADORA</p>
+                <iframe 
+                    src="https://www.youtube.com/embed/L_LUpnjgPso" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+                <button link="https://www.youtube.com/watch?v=L_LUpnjgPso" class="compra" >Comprar</button>
+            </div>
+
+
+            
+        </div>
+
+
+<div class="libroh" data-id="libro2">
+            <img src="catalogo/atlas.jpg" alt="La Musa Lunar" />
+         
+            <div class="info-libro">
+                <h3>Atlas: El Pilar Eterno Bajo la Bóveda Celeste</h3>
+                <p>Atlas: El Pilar Eterno Bajo la Bóveda Celeste</p>
+
+               <iframe width="560" height="315" src="https://www.youtube.com/embed/KwOuiH3yBqA?si=GVQALbH2Zx_pWS5M" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+               
+               <a href="https://www.amazon.es/dp/B0FJFPJYBD" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+            </div>
+
+
+            
+        </div>
+
+ 
+
+<div class="libroh" data-id="libro_urano">
+    <img src="catalogo/urano.jpg" alt="Urano: La Traición que Separó el Cielo de la Tierra" />
+    <div class="info-libro">
+        <h3>Urano: La Traición que Separó el Cielo de la Tierra</h3>
+        <p>Urano: La Traición que Separó el Cielo de la Tierra</p>
+        <a href="https://www.amazon.es/dp/B0FJG4ZHDG" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_sileno">
+    <img src="catalogo/sileno.jpg" alt="Sileno: El Toque del Vacío: Midas, Sileno y la Sombra Dionisíaca" />
+    <div class="info-libro">
+        <h3>Sileno: El Toque del Vacío: Midas, Sileno y la Sombra Dionisíaca</h3>
+        <p>Sileno: El Toque del Vacío: Midas, Sileno y la Sombra Dionisíaca</p><iframe  src="https://www.youtube.com/embed/BK47D3gxGfA?si=ZY51QSXlUNYIvZ5Z" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        <a href="https://www.amazon.es/dp/B0FJGHZZRQ" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_gea">
+    <img src="catalogo/gea.jpg" alt="Gea: El Vientre que Engendró la Rebelión" />
+    <div class="info-libro">
+        <h3>Gea: El Vientre que Engendró la Rebelión</h3>
+        <p>Gea: El Vientre que Engendró la Rebelión</p>
+        <a href="https://www.amazon.es/dp/B0FJHKF3Q3" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+<div class="libroh" data-id="libro_zeus">
+    <img src="catalogo/zeus.jpg" alt="Zeus: El Trueno que Forjó un Trono" />
+    <div class="info-libro">
+        <h3>Zeus: El Trueno que Forjó un Trono</h3>
+        <p>Zeus: El Trueno que Forjó un Trono</p>
+        <a href="https://www.amazon.es/dp/B0FK3RVVRD" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_tetis">
+    <img src="catalogo/tetis.jpg" alt="Tetis: La ninfa cuyo amor y destino forjaron una guerra" />
+    <div class="info-libro">
+        <h3>Tetis: La ninfa cuyo amor y destino forjaron una guerra</h3>
+        <p>Tetis: La ninfa cuyo amor y destino forjaron una guerra</p>
+        <a href="https://www.amazon.es/dp/B0FK21KZXC" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_hermes">
+    <img src="catalogo/hermes.jpg" alt="Hermes: El Ingenio Alado que Conecta Mundos" />
+    <div class="info-libro">
+        <h3>Hermes: El Ingenio Alado que Conecta Mundos</h3>
+        <p>Hermes: El Ingenio Alado que Conecta Mundos</p>
+        <a href="https://www.amazon.es/dp/B0F19ZVVBC" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_apolo">
+    <img src="catalogo/apolo.jpg" alt="Apolo: La Lira y el Laurel" />
+    <div class="info-libro">
+        <h3>Apolo: La Lira y el Laurel</h3>
+        <p>Apolo: La Lira y el Laurel</p>
+        <a href="https://www.amazon.es/dp/B0FKZ13YPK" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_hestia">
+    <img src="catalogo/hestia.jpg" alt="Hestia: La Llama Olvidada" />
+    <div class="info-libro">
+        <h3>Hestia: La Llama Olvidada</h3>
+        <p>Hestia: La Llama Olvidada</p>
+        <a href="https://www.amazon.es/dp/B0FKZ1RBD9" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_medusa">
+    <img src="catalogo/medusa.jpg" alt="Medusa: Ecos de Piedra y Sangre" />
+    <div class="info-libro">
+        <h3>Medusa: Ecos de Piedra y Sangre</h3>
+        <p>Medusa: Ecos de Piedra y Sangre</p>
+        <a href="https://www.amazon.es/dp/B0FKTFTR8B" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_poseidon">
+    <img src="catalogo/poseidon.jpg" alt="Poseidon: El Tridente y el Olivo" />
+    <div class="info-libro">
+        <h3>Poseidon: El Tridente y el Olivo</h3>
+        <p>Poseidon: El Tridente y el Olivo</p>
+        <a href="https://www.amazon.es/dp/B0FKTR66T9" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_orfeo">
+    <img src="catalogo/orfeo.jpg" alt="Orfeo: El Eco de una Lira entre Sombras" />
+    <div class="info-libro">
+        <h3>Orfeo: El Eco de una Lira entre Sombras</h3>
+        <p>Orfeo: El Eco de una Lira entre Sombras</p>
+        <a href="https://www.amazon.es/dp/B0FKN4H2BW" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_artemisa">
+    <img src="catalogo/artemisa.jpg" alt="Artemisa: El Juramento del Arco de Plata" />
+    <div class="info-libro">
+        <h3>Artemisa: El Juramento del Arco de Plata</h3>
+        <p>Artemisa: El Juramento del Arco de Plata</p>
+        <a href="https://www.amazon.es/dp/B0FKT97R7P" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_hades">
+    <img src="catalogo/hades.jpg" alt="Hades: El Trono de Sombras y Flores" />
+    <div class="info-libro">
+        <h3>Hades: El Trono de Sombras y Flores</h3>
+        <p>Hades: El Trono de Sombras y Flores</p>
+        <a href="https://www.amazon.es/dp/B0FKFJ31Y9" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_persefone">
+    <img src="catalogo/persefone.jpg" alt="Perséfone: La Corona de Dos Mundos" />
+    <div class="info-libro">
+        <h3>Perséfone: La Corona de Dos Mundos</h3>
+        <p>Perséfone: La Corona de Dos Mundos</p>
+        <a href="https://www.amazon.es/dp/B0FKH51LCG" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_dionisio">
+    <img src="catalogo/dionisio.jpg" alt="Dionisio: El Legado del Dios Nacido Dos Veces" />
+    <div class="info-libro">
+        <h3>Dionisio: El Legado del Dios Nacido Dos Veces</h3>
+        <p>Dionisio: El Legado del Dios Nacido Dos Veces</p>
+        <a href="https://www.amazon.es/dp/B0FJ8DZJWL" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_cerbero">
+    <img src="catalogo/cerbero.jpg" alt="Cerbero: La Lealtad Forjada en Sombras" />
+    <div class="info-libro">
+        <h3>Cerbero: La Lealtad Forjada en Sombras</h3>
+        <p>Cerbero: La Lealtad Forjada en Sombras</p>
+        <a href="https://www.amazon.es/dp/B0FKGKMG4X" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_esteno_y_euriale">
+    <img src="catalogo/esteno_y_euriale.jpg" alt="Esteno y Euriale: El Lamento de la Roca y la Furia" />
+    <div class="info-libro">
+        <h3>Esteno y Euriale: El Lamento de la Roca y la Furia</h3>
+        <p>Esteno y Euriale: El Lamento de la Roca y la Furia</p>
+        <a href="https://www.amazon.es/dp/B0FL2NXFHT" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_demeter">
+    <img src="catalogo/demeter.jpg" alt="Demeter: El Lamento de la Tierra" />
+    <div class="info-libro">
+        <h3>Demeter: El Lamento de la Tierra</h3>
+        <p>Demeter: El Lamento de la Tierra</p>
+        <a href="https://www.amazon.es/dp/B0FL2FCZYC" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_niobe">
+    <img src="catalogo/niobe.jpg" alt="Níobe: El Llanto que Petrificó una Reina" />
+    <div class="info-libro">
+        <h3>Níobe: El Llanto que Petrificó una Reina</h3>
+        <p>Níobe: El Llanto que Petrificó una Reina</p>
+        <a href="https://www.amazon.es/dp/B0FL2FZCF5" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_kratos">
+    <img src="catalogo/kratos.jpg" alt="Kratos: El Puño del Orden Divino" />
+    <div class="info-libro">
+        <h3>Kratos: El Puño del Orden Divino</h3>
+        <p>Kratos: El Puño del Orden Divino</p>
+        <a href="https://www.amazon.es/dp/B0FL189SV6" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_atenea">
+    <img src="catalogo/atenea.jpg" alt="Atenea: La Sabiduría Armada: El Legado de Atenea" />
+    <div class="info-libro">
+        <h3>Atenea: La Sabiduría Armada: El Legado de Atenea</h3>
+        <p>Atenea: La Sabiduría Armada: El Legado de Atenea</p>
+        <a href="https://www.amazon.es/dp/B0FK26811G" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_orion">
+    <img src="catalogo/orion.jpg" alt="Orion: La Cicatriz de las Estrellas" />
+    <div class="info-libro">
+        <h3>Orion: La Cicatriz de las Estrellas</h3>
+        <p>Orion: La Cicatriz de las Estrellas</p>
+        <a href="https://www.amazon.es/dp/B0FKTJTQ7M" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_ulises">
+    <img src="catalogo/ulises.jpg" alt="Ulises: La Cicatriz y el Remo" />
+    <div class="info-libro">
+        <h3>Ulises: La Cicatriz y el Remo</h3>
+        <p>Ulises: La Cicatriz y el Remo</p>
+        <a href="https://www.amazon.es/dp/B0FKZZSPT2" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_triton">
+    <img src="catalogo/triton.jpg" alt="Triton: El Eco del Abismo" />
+    <div class="info-libro">
+        <h3>Triton: El Eco del Abismo</h3>
+        <p>Triton: El Eco del Abismo</p>
+        <a href="https://www.amazon.es/dp/B0FL14NXGC" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_euridice">
+    <img src="catalogo/euridice.jpg" alt="Euridice: El eco silencioso de Eurídice" />
+    <div class="info-libro">
+        <h3>Euridice: El eco silencioso de Eurídice</h3>
+        <p>Euridice: El eco silencioso de Eurídice</p>
+        <a href="https://www.amazon.es/dp/B0FKYD3MT9" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+<div class="libroh" data-id="libro_cronos">
+    <img src="catalogo/cronos.jpg" alt="Cronos: El Rey que Devoró su Propio Futuro" />
+    <div class="info-libro">
+        <h3>Cronos: El Rey que Devoró su Propio Futuro</h3>
+        <p>Cronos: El Rey que Devoró su Propio Futuro</p>
+        <a href="https://www.amazon.es/dp/B0FJMCKR85" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_ariadna">
+    <img src="catalogo/ariadna.jpg" alt="Ariadna: Del Hilo Al Firmamento" />
+    <div class="info-libro">
+        <h3>Ariadna: Del Hilo Al Firmamento</h3>
+        <p>Ariadna: Del Hilo Al Firmamento</p>
+        <a href="https://www.amazon.es/dp/B0FJN8T6QB" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_metis">
+    <img src="catalogo/metis.jpg" alt="Metis: La Mente del Trueno" />
+    <div class="info-libro">
+        <h3>Metis: La Mente del Trueno</h3>
+        <p>Metis: La Mente del Trueno</p>
+        <a href="https://www.amazon.es/dp/B0FJXTXVKY" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_afrodita">
+    <img src="catalogo/afrodita.jpg" alt="Afrodita: El Veredicto de la Diosa Dorada" />
+    <div class="info-libro">
+        <h3>Afrodita: El Veredicto de la Diosa Dorada</h3>
+        <p>Afrodita: El Veredicto de la Diosa Dorada</p>
+        <a href="https://www.amazon.es/dp/B0FK2B83LP" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_hiperion">
+    <img src="catalogo/hiperion.jpg" alt="Hiperión: El Vigía Silencioso de la Luz Celestial" />
+    <div class="info-libro">
+        <h3>Hiperión: El Vigía Silencioso de la Luz Celestial</h3>
+        <p>Hiperión: El Vigía Silencioso de la Luz Celestial</p>
+        <a href="https://www.amazon.es/dp/B0FK1XD4FS" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+<div class="libroh" data-id="libro_rea">
+    <img src="catalogo/rea.jpg" alt="Rea: La Matriarca que Engañó al Destino" />
+    <div class="info-libro">
+        <h3>Rea: La Matriarca que Engañó al Destino</h3>
+        <p>Rea: La Matriarca que Engañó al Destino</p>
+        <a href="https://www.amazon.es/dp/B0FK2XMBDH" target="_blank" rel="noopener noreferrer" class="compra">Comprar</a>
+    </div>
+</div>
+
+    </div>
+</div>
+ 
+<script>function mostrarInfoLibro(elementoPadre) {
+  // Primero, obtenemos el div que contendrá la información, que está dentro del contenedor padre.
+  const infoDiv = elementoPadre.querySelector('.info-libro');
+  
+  // Usamos un 'if' para alternar la visibilidad.
+  // Si el div está oculto (display: none), lo mostramos (display: flex).
+  // Si ya está visible, lo ocultamos.
+  // Esto es útil para poder cerrar la información haciendo clic de nuevo.
+  if (infoDiv.style.display === 'none' || infoDiv.style.display === '') {
+    infoDiv.style.display = 'flex';
+  } else {
+    infoDiv.style.display = 'none';
+  }
+}</script>
+
+<div id="programador" class="pantalla" data-titulo="Programador">
+    <div class="p-editor-header bg-gray-800 p-3 shadow-md z-20 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <button id="p-undo-btn" class="tons2" onclick="pUndo()">Deshacer</button>
+            <button id="p-redo-btn" class="tons2" onclick="pRedo()">Rehacer</button>
+            <button id="p-zoom-out-btn" class="tons2">-</button>
+            <span id="p-zoom-level-indicator">100%</span>
+            <button id="p-zoom-in-btn" class="tons2">+</button>
+
+            <div class="p-dropdown">
+    <button class="p-dropbtn tons2">Añadir Nodo</button>
+ <div class="p-dropdown-content p-menu-accordion">
+    <!-- Nodos Básicos y de IA existentes -->
+    <details class="p-dropdown-category">
+        <summary>🏁 Inicio y Variables</summary>
+        <div>
+            <a href="#" onclick="pAddNode('initiator'); return false;">🚀 Iniciador</a>
+            <a href="#" onclick="pAddNode('text_variable'); return false;">📝 Variable de Texto</a>
+        </div>
+    </details>
+
+    <details class="p-dropdown-category">
+        <summary>✨ IA (Texto, JSON, Imagen)</summary>
+        <div>
+            <a href="#" onclick="pAddNode('gemini_text_request'); return false;">🤖 Generación de Texto</a>
+            <a href="#" onclick="pAddNode('gemini_json_request'); return false;">📄 Generador de Json</a>
+            <a href="#" onclick="pAddNode('generacion_imagen'); return false;">🖼️ Generación de Imagen</a>
+            <a href="#" onclick="pAddNode('generador_datos'); return false;">🧩 Generador de Datos</a>
+            <a href="#" onclick="pAddNode('generador_personajesyobjetos'); return false;">🧩 Generador de Personajes y Objetos</a>
+        </div>
+    </details>
+
+    <!-- Nuevos Nodos de Lógica y Flujo de Control -->
+    <details class="p-dropdown-category">
+        <summary>🚦 Lógica y Flujo</summary>
+        <div>
+            <a href="#" onclick="pAddNode('switch'); return false;">🚦 Selector (Switch)</a>
+            <a href="#" onclick="pAddNode('for_each'); return false;">🔁 Para Cada (For Each)</a>
+            <a href="#" onclick="pAddNode('router'); return false;">🔀 Enrutador por Contenido</a>
+            <a href="#" onclick="pAddNode('await_delay'); return false;">⏳ Esperar (Await)</a>
+            <a href="#" onclick="pAddNode('break'); return false;">🛑 Interrumpir (Break)</a>
+        </div>
+    </details>
+
+    <!-- Nuevos Nodos de Procesamiento de Datos -->
+    <details class="p-dropdown-category">
+        <summary>🛠️ Procesamiento de Datos</summary>
+        <div>
+
+            <a href="#" onclick="pAddNode('salida_a_datos'); return false;">➡️📄 Salida a Datos</a>
+            <a href="#" onclick="pAddNode('json_add_field'); return false;">➡️📄 Añadir campo a Json</a>
+            <a href="#" onclick="pAddNode('json_to_text'); return false;">➡️📄 Json a Texto</a>
+            <a href="#" onclick="pAddNode('text_to_json'); return false;">➡️📄 Texto a Json</a>
+
+              <a href="#" onclick="pAddNode('json_render_3d'); return false;">➡️🖼️ Json a 3D base64</a>
+
+
+
+            <a href="#" onclick="pAddNode('json_parser'); return false;">➡️📄 Extraer de JSON</a>
+            <a href="#" onclick="pAddNode('csv_parser'); return false;">📃 Analizador CSV</a>
+            <a href="#" onclick="pAddNode('array_builder'); return false;">➕📊 Construir Array</a>
+            <a href="#" onclick="pAddNode('object_merger'); return false;">🧬 Fusionar Objetos</a>
+            <a href="#" onclick="pAddNode('regex_extractor'); return false;">🔍 Extractor Regex</a>
+            <a href="#" onclick="pAddNode('text_formatter'); return false;">✍️ Formateador de Texto</a>
+            <a href="#" onclick="pAddNode('uppercase'); return false;">Abc ➜ ABC</a>
+            <a href="#" onclick="pAddNode('suffix'); return false;">Añadir Sufijo</a>
+        </div>
+    </details>
+
+    <!-- Nuevos Nodos de Integración y API -->
+    <details class="p-dropdown-category">
+        <summary>🔌 Integraciones y API</summary>
+        <div>
+            <a href="#" onclick="pAddNode('http_request'); return false;">🌐 Petición HTTP</a>
+            <a href="#" onclick="pAddNode('database_query'); return false;">🗄️ Consulta a BD</a>
+            <a href="#" onclick="pAddNode('read_google_sheet'); return false;">📈 Leer Google Sheets</a>
+            <a href="#" onclick="pAddNode('file_reader'); return false;">📂 Leer Archivo Local</a>
+        </div>
+    </details>
+
+    <!-- Nuevos Nodos de Interacción Humana -->
+    <details class="p-dropdown-category">
+        <summary>🙋‍♂️ Interacción Humana</summary>
+        <div>
+            <a href="#" onclick="pAddNode('await_user_input'); return false;">💬 Esperar Input</a>
+            <a href="#" onclick="pAddNode('approval_gate'); return false;">✅ Puerta de Aprobación</a>
+            <a href="#" onclick="pAddNode('send_email'); return false;">📧 Enviar Email</a>
+        </div>
+    </details>
+
+    <!-- Nuevos Nodos de Agentes y Memoria -->
+    <details class="p-dropdown-category">
+        <summary>🧠 Agentes y Memoria</summary>
+        <div>
+            <a href="#" onclick="pAddNode('vector_store_write'); return false;">🧠 Escribir en Memoria</a>
+            <a href="#" onclick="pAddNode('vector_store_read'); return false;">🔎 Leer de Memoria</a>
+            <a href="#" onclick="pAddNode('chat_memory'); return false;">🗣️ Memoria de Chat</a>
+            <a href="#" onclick="pAddNode('goal_planner'); return false;">🎯 Planificador de Metas</a>
+        </div>
+    </details>
+
+    <!-- Nuevos Nodos de Procesamiento Multimedia -->
+    <details class="p-dropdown-category">
+        <summary>🎬 Multimedia</summary>
+        <div>
+            <a href="#" onclick="pAddNode('image_to_text'); return false;">🖼️ Imagen a Texto</a>
+            <a href="#" onclick="pAddNode('text_to_speech'); return false;">🔊 Texto a Voz</a>
+            <a href="#" onclick="pAddNode('image_generator'); return false;">🎨 Generador de Imágenes</a>
+        </div>
+    </details>
+    
+    <!-- Nuevos Nodos de Agendamiento y Disparadores -->
+    <details class="p-dropdown-category">
+        <summary>⏰ Disparadores (Triggers)</summary>
+        <div>
+            <a href="#" onclick="pAddNode('schedule_trigger'); return false;">⏰ Por Horario</a>
+            <a href="#" onclick="pAddNode('webhook_trigger'); return false;">🎣 Por Webhook</a>
+            <a href="#" onclick="pAddNode('file_watcher_trigger'); return false;">📁 Por Archivo</a>
+        </div>
+    </details>
+
+    <!-- Nuevos Nodos de Análisis y Depuración -->
+    <details class="p-dropdown-category">
+        <summary>🔍 Análisis y Depuración</summary>
+        <div>
+            <a href="#" onclick="pAddNode('data_aggregator'); return false;">🧮 Agregador de Datos</a>
+            <a href="#" onclick="pAddNode('flow_inspector'); return false;">🔬 Inspector de Flujo</a>
+            <a href="#" onclick="pAddNode('error_handler'); return false;">🛡️ Manejador de Errores</a>
+            <a href="#" onclick="pAddNode('log'); return false;">➜ Mostrar Resultado</a>
+        </div>
+    </details>
+</div>
+
+
+
+
+</div>
+                <div class="flex items-center space-x-2 border-l-2 border-gray-700 pl-4">
+            <textarea id="p-json-input" class="bg-gray-900 text-white p-1 rounded w-64 h-10" placeholder="Pega el JSON del plano aquí..."></textarea>
+            <button id="p-load-json-btn" class="tons2">Cargar Plano</button>
+            <input type="file" id="p-json-upload" accept=".json,application/json" style="display: none;">
+            <label for="p-json-upload" class="tons2 cursor-pointer">Subir Archivo</label>
+        </div>
+            <div class="p-blueprint-controls flex items-center space-x-2 ml-4 border-l-2 border-gray-600 pl-4">
+                <select id="p-planos-select"  ></select>
+                <button id="p-save-plano-btn" class="tons2">Guardar Plano</button>
+                <button id="p-rename-plano-btn" class="tons2">Renombrar</button>
+                <button id="p-delete-plano-btn" class="tons2">Borrar</button>
+                 <button onclick="pRunAutomation()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">▶ Ejecutar</button>
+            <button onclick="pClearAll()" class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded-lg transition-colors">Limpiar Todo</button>
+            </div>
+            </div>
+        <div>
+           
+        </div>
+
+        
+    </div>
+
+    <div class="p-editor-main flex-grow flex relative overflow-hidden">
+        <div id="p-canvas-container" class="flex-grow h-full overflow-auto">
+            <div id="p-canvas"></div>
+        </div>
+        <div id="p-output-panel" class="w-96 flex-shrink-0 h-full bg-gray-800 p-4 overflow-y-auto shadow-inner">
+            <h2 class="text-lg font-bold mb-2">Salida de la Ejecución</h2>
+            <div id="p-output" class="bg-black p-3 rounded-md text-sm font-mono whitespace-pre-wrap"></div>
+        </div>
+    </div>
+</div>
+
+
+<div id="personajes" class="pantalla" data-titulo="Datos">
+    <button class="pro18"  title="Acción contextual"  onclick="abrirModalAIDatos()" >✨</button>
+<button id="importar-datos-btn" class="pro14" title="Importar desde JSON">📥</button>
+<input type="file" id="importador-json-oculto" accept=".json" hidden>
+    <button class="pro16" onclick="modalExportarDatos()" >📤</button>
+    <button class="pro17" style="display: none;" onclick=" document.getElementById('vistageneral').style.display = 'flex', document.getElementById('personajes').style.display = 'none', document.getElementById('biblioteca').style.display = 'none'; " >📜</button>
+<button class="pro17" id="sumarpersonaje" onclick="agregarPersonaje()">+</button>
+
+    <button class="pro17"  onclick="generarImagenesFaltantes()" style="display: none;" >🖼️✨</button>
+    <div class="herramientas" ></div>
+    <div id="datos-botones-superiores">
+        
+
+
+    </div>
+    <div id="listapersonajes"></div></div>
+</div>
+
+<div id="escena-vista" class="pantalla" data-titulo="Escena Vista">
+    <textarea id="escena-texto" placeholder="Texto de la escena"></textarea>
+    <div id="drop-zone"   >
+        <img id="imagen-preview" alt="Vista previa de la imagen">
+    <input type="file" id="file-input" accept="image/*, video/mp4, video/webm, image/gif"  style="display: none;" ></div>
+<div id="botonesss"   >
+    <button class="botoness" onclick="agregarBoton('transicion')">➕ Transición</button>
+    <button class="botoness" onclick="agregarBoton('accion')">➕ Acción</button></div>
+<div class="lista" > <div id="botones-lista"></div></div>
+</div>
+
+<video id="hiddenVideoPlayer" style="display:none;"></video>
+
+<canvas id="hiddenCanvas" style="display:none;"></canvas>
+
+
+
+<div id ="animacionsvg" class="nom" >
+
+    <div class="animation-container">
+        <div class="main-content">
+            <div class="canvas-wrapper">
+                <canvas id="animation-canvas"></canvas>
+            </div>
+            <div class="controls-panel">
+                <h3>Control de Animación</h3>
+                <textarea id="animation-prompt" placeholder="Describe la escena que quieres animar. Por ejemplo: 'Un samurai aparece desde la izquierda y desenfunda su katana. La cámara hace un zoom lento a su rostro.'"></textarea>
+                <div class="button-group">
+                    <button id="generate-animation-btn">✨ Generar Animación</button>
+                    <button id="play-pause-btn" disabled>▶️ Reproducir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+</div>
+
+<div id="modal-ia-herramientas" class="modal-content">
+    <button class="modal-close-button" onclick="cerrarModalIAHerramientas()">&times;</button>
+    <h3>Herramientas de Creación con IA</h3>
+
+    <div class="ia-modal-section">
+        <label for="gemini1-modal">Escribe la idea para tu historia:</label>
+        <textarea id="gemini1-modal" placeholder="Ej: Un detective en un Madrid futurista investiga la desaparición de un androide con recuerdos humanos..."></textarea>
+    </div>
+
+    <div class="ia-modal-section">
+        <h4>Opciones de Generación</h4>
+        <div class="ia-modal-controls">
+            <div class="ia-modal-control-group">
+                <label for="cantidadescenas-modal">Capítulos a generar:</label>
+                <input type="number" id="cantidadescenas-modal" value="3" min="1">
+            </div>
+            <div class="ia-modal-control-group">
+                <label for="cantidadeframes-modal">Frames por capítulo:</label>
+                <input type="number" id="cantidadeframes-modal" value="4" min="1">
+            </div>
+        </div>
+        
+        <div class="ia-modal-checkbox" style="margin-top: 15px; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="incluir-datos-ia-modal" checked>
+            <label for="incluir-datos-ia-modal">Usar Datos (Personajes, Lugares, etc.) para dar contexto a la IA</label>
+        </div>
+        </div>
+    
+    <div class="ia-modal-section">
+        <h4>Filtrar Datos por Arco Narrativo</h4>
+        <p style="font-size: 0.8em; color: #bbb; margin-top: -5px;">Selecciona los arcos narrativos cuyos datos quieres que la IA utilice como contexto para generar la historia.</p>
+        <div id="ia-arcos-filter-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; max-height: 150px; overflow-y: auto; padding: 10px; background-color: rgba(0,0,0,0.2); border-radius: 5px;">
+        </div>
+    </div>
+
+    <div class="ia-modal-actions">
+        <button class="modal-button principal-action" onclick="lanzarGeneracionHistoria()">✨ Generar Historia Completa</button>
+    </div>
+</div>
+
+<div id="lugares" class="modal-content">
+<div   class="language-selector-css">
+
+  <button class="lang-button-css">i</button>
+
+  <ul class="lang-menu-css">
+    <li><a href="#" onclick="changeLanguage('es'); return false;">🇪🇸 - Español</a></li>
+    <li><a href="#" onclick="changeLanguage('en'); return false;">🇺🇸 - English</a></li>
+    <li><a href="#" onclick="changeLanguage('ar'); return false;">🇸🇦 - العربية </a></li>
+    <li><a href="#" onclick="changeLanguage('zh'); return false;">🇨🇳 - 中文</a></li>
+    <li><a href="#" onclick="changeLanguage('hi'); return false;">🇮🇳 - हिन्दी</a></li>
+    <li><a href="#" onclick="changeLanguage('ru'); return false;">🇷🇺 - Русский</a></li>
+
+    <li><a href="#" onclick="changeLanguage('fr'); return false;">🇫� - Français</a></li>
+    <li><a href="#" onclick="changeLanguage('de'); return false;">🇩🇪 - Deutsch</a></li>
+    <li><a href="#" onclick="changeLanguage('it'); return false;">🇮🇹 - Italiano</a></li>
+    <li><a href="#" onclick="changeLanguage('pt'); return false;">🇵🇹 - Português</a></li>
+    <li><a href="#" onclick="changeLanguage('ja'); return false;">🇯🇵 - 日本語</a></li>
+    <li><a href="#" onclick="changeLanguage('ko'); return false;">🇰🇷 - 한국어</a></li>
+    <li><a href="#" onclick="changeLanguage('no'); return false;">🇳🇴 - Norsk</a></li>
+    
+    <li><a href="#" onclick="changeLanguage('ca'); return false;">🇪🇸 - Català</a></li>
+    <li><a href="#" onclick="changeLanguage('eu'); return false;">🇪🇸 - Euskera</a></li>
+    <li><a href="#" onclick="changeLanguage('gl'); return false;">🇪🇸 - Galego</a></li>
+  </ul>
+
+</div>
+
+
+    <button class="modal-close-button" onclick="cerrarModalConfig()">&times;</button>
+   <label for="player-name">Nombre:</label>
+                        <input type="text" id="player-name" placeholder="Elige un nombre para tu personaje">
+                        <button id="save-name-btn" class="btn btn-success">Guardar Nombre</button>
+                        <p id="save-feedback" class="feedback"></p>    
+
+    <p id="apitexto" style="display: none;">Para utilizar la inteligencia artificial de Silenos necesita: Una API KEY de GOOGLE, puede obtenerla aquí:</p>
+    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"  style="padding: 10px 20px; background-color: rgb(0, 0, 0); color: white; text-decoration: none; border-radius: 5px;">
+     AI Studio Google.com
+    </a><p></p>
+    <input type="text" id="apiInput" placeholder="Ingresa tu API Key">
+    <button class="batualizar" onclick="updateApiKey()">Actualizar</button>
+    <p>API Key: <span id="apiKeyDisplay">[🔴]</span></p>
+</div>
+
+<div id="modal-importar-json" class="modal-content">
+    <button class="modal-close-button" onclick="cerrarModalImportar()">&times;</button>
+    <h3>Importar Datos desde JSON</h3>
+    <p>Pega el contenido de un único objeto JSON (un dato, capítulo, etc.) en el siguiente campo.</p>
+    <textarea id="json-import-area" placeholder='Ejemplo para un "Dato":\n{\n  "nombre": "Espada Legendaria",\n  "descripcion": "Forjada por los dioses.",\n  "etiqueta": "objeto",\n  "imagen": ""\n}'></textarea>
+    <button class="modal-button" onclick="importarDatosDesdeJSON()">Añadir Datos</button>
+</div>
+
+<div id="modal-ia-datos" class="modal-content">
+    <button class="modal-close-button" onclick="cerrarModalAIDatos()">&times;</button>
+    <h3>Añadir Datos con Inteligencia Artificial</h3>
+    <p>Pega aquí el nombre de una obra (ej: "Star Wars"), una lista de ideas, o un texto para que la IA los procese y añada como datos estructurados.</p>
+    <textarea id="ia-datos-area" placeholder='Ejemplo 1: El Señor de los Anillos
+
+Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el reino de Camelot.'></textarea>
+
+    <!-- INICIO: Elementos añadidos para seleccionar el arco -->
+    <div class="ia-arco-selector" style="margin-top: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <label for="ia-arco-select" style="font-weight: bold; color: #333;">Asignar al Arco:</label>
+        <select id="ia-arco-select" onchange="toggleCustomArcoInput(this)" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc; background-color: white; flex-grow: 1;">
+            <!-- Las opciones se llenarán dinámicamente con JavaScript -->
+        </select>
+        <input type="text" id="ia-arco-custom" placeholder="Nombre del arco personalizado" style="display:none; padding: 8px; border-radius: 5px; border: 1px solid #ccc; flex-grow: 1;">
+    </div>
+    <!-- FIN: Elementos añadidos -->
+
+    <button class="modal-button" onclick="procesarEntradaConIA()" style="margin-top: 20px; width: 100%;">✨ Analizar y Agregar Datos</button>
+</div>
+
+<div id="modal-exportar" class="modal-content">
+    <button class="modal-close-button" onclick="cerrarModalExportar()">&times;</button>
+
+    <div class="export-option">
+        <h4>Exportar Libro a HTML</h4>
+        <p>Selecciona un libro de la lista para exportar todos sus capítulos y frames a un único archivo HTML.</p>
+        <div class="export-controls">
+            <select id="libro-export-select" class="modal-select"></select>
+            <button class="modal-button" onclick="exportarLibroSeleccionado()">Exportar Libro HTML</button>
+        </div>
+    </div>
+    <hr> <div class="export-option">
+        <h4>Exportar Guion</h4>
+        <p>Exporta los capítulos y sus frames a un archivo HTML simple.</p>
+        <button class="modal-button" onclick="generarHTML()">Exportar Guion HTML</button>
+    </div>
+   <div class="export-option">
+        <h4>Exportar Storyboard de Tomas</h4>
+        <p>Exporta las escenas de storyboard (imágenes y texto) a un archivo HTML.</p>
+         <div class="export-controls">
+             <select id="tomas-export-select" class="modal-select"></select>
+             <button class="modal-button" onclick="generarHTMLTomas()">Exportar Tomas HTML</button>
+        </div>
+    </div>
+    <div class="export-option">
+        <h4>Exportar Videojuego</h4>
+        <p>Exporta los momentos como una experiencia interactiva.</p>
+        <select id="momento-inicial-id" class="modal-select"></select>
+        <button id="exportar-juego-3d-btn">Exportar Juego 3D</button>
+
+        <button class="modal-button" onclick="iniciarExportacionJuego()">Exportar Videojuego HTML</button>
+    </div>
+</div>
+
+ <button id="asistente-btn" title="Asistente IA"  style="display: none;" >S</button>
+
+</div>
+ 
+<div id="principio" class="pantalla2" data-titulo="Inicio"  >
+  <button class="catalogo" onclick="abrirVentana('catalogo');" >Catálogo</button>
+
+<div   class="language-selector-css">
+
+  <button class="lang-button-css">i</button>
+
+  <ul class="lang-menu-css">
+    <li><a href="#" onclick="changeLanguage('es'); return false;">🇪🇸 - Español</a></li>
+    <li><a href="#" onclick="changeLanguage('en'); return false;">🇺🇸 - English</a></li>
+    <li><a href="#" onclick="changeLanguage('ar'); return false;">🇸🇦 - العربية </a></li>
+    <li><a href="#" onclick="changeLanguage('zh'); return false;">🇨🇳 - 中文</a></li>
+    <li><a href="#" onclick="changeLanguage('hi'); return false;">🇮🇳 - हिन्दी</a></li>
+    <li><a href="#" onclick="changeLanguage('ru'); return false;">🇷🇺 - Русский</a></li>
+
+    <li><a href="#" onclick="changeLanguage('fr'); return false;">🇫🇷 - Français</a></li>
+    <li><a href="#" onclick="changeLanguage('de'); return false;">🇩🇪 - Deutsch</a></li>
+    <li><a href="#" onclick="changeLanguage('it'); return false;">🇮🇹 - Italiano</a></li>
+    <li><a href="#" onclick="changeLanguage('pt'); return false;">🇵🇹 - Português</a></li>
+    <li><a href="#" onclick="changeLanguage('ja'); return false;">🇯🇵 - 日本語</a></li>
+    <li><a href="#" onclick="changeLanguage('ko'); return false;">🇰🇷 - 한국어</a></li>
+    <li><a href="#" onclick="changeLanguage('no'); return false;">🇳🇴 - Norsk</a></li>
+    
+    <li><a href="#" onclick="changeLanguage('ca'); return false;">🇪🇸 - Català</a></li>
+    <li><a href="#" onclick="changeLanguage('eu'); return false;">🇪🇸 - Euskera</a></li>
+    <li><a href="#" onclick="changeLanguage('gl'); return false;">🇪🇸 - Galego</a></li>
+  </ul>
+
+</div>
+
+
+    <div id="titulo-esfera-container"> 
+      
+        <div id="esfera">
+           <button id="nuevo" class="pro3" onclick="iniciarAnimacionSalida() , renderizarVisorDeLibros();; ">Entrar</button>
+            <button  id="cargar" class="pro3" onclick="iniciarAnimacionSalida(), abrirVentana('proyecto');document.getElementById('file-load').click(), renderizarVisorDeLibros();">Cargar</button>
+           <button style="display: none;" id="cargar" class="pro3" onclick="handleCargarCarpeta()">Cargar Carpeta</button>
+ </div>
+    </div>
+</div>
+
+
+<div id="progress-bar-container" class="status-indicator">
+    <span id="progress-bar-label">Procesando...</span>
+    <div class="progress-bar-background">
+        <div id="progress-bar-fill"></div>
+    </div>
+    <span id="progress-bar-percentage">0%</span>
+</div>
+
+<div id="esfera2" ></div>
+
+
+<div id="modal-momentos-ia" class="modal-content" style="display: none; width: auto; max-width: 600px;">
+    <button class="modal-close-button" onclick="cerrarModalMomentosIA()">&times;</button>
+    
+    <h3>Generador de Aventura Estructural</h3>
+    <p style="font-size: 0.9em; color: #666; text-align: center; margin-bottom: 25px;">
+        Define la estructura narrativa. La IA construirá la historia por fases.
+    </p>
+
+    <div id="modal-ia-content-placeholder" style="width: 100%; display: flex; flex-direction: column; gap: 20px;">
+        <div class="ia-control-row">
+            <label for="guion-select-modal">1. Guion de Referencia:</label>
+            <select id="guion-select-modal" class="pro"></select>
+        </div>
+
+        <div class="ia-control-row">
+            <label for="ia-finales-input">2. Número de Finales:</label>
+            <input type="number" id="ia-finales-input" class="pro ia-input-numero" min="1" max="10" value="2">
+        </div>
+        
+        <div class="ia-control-row">
+            <label for="ia-tamanio-input">3. Tamaño de la Obra (0-5):</label>
+            <input type="number" id="ia-tamanio-input" class="pro ia-input-numero" min="0" max="5" value="1">
+        </div>
+
+        <div class="ia-info-box">
+            <div id="ia-api-calls-display">Peticiones a la API estimadas: ~3</div>
+            <p style="font-size: 0.9em; margin-top: 5px;">El 'Tamaño' añade ramas que regresan a la trama principal, haciendo la historia más compleja.</p>
+        </div>
+
+        <button id="generar-aventura-ia-btn-modal" class="pro modal-button">✨ Generar Aventura</button>
+    </div>
+</div>
+
+<div id="modal-seleccionar-libro-para-frames" class="modal-content" style="display: none;">
+    <button class="modal-close-button" onclick="cerrarModalSeleccionLibro()">&times;</button>
+    <h3>Generar Frames con IA</h3>
+
+    <div class="modal-seccion">
+        <label for="guion-origen-select">1. Elige el Guion a utilizar como base:</label>
+        <select id="guion-origen-select" class="modal-select"></select>
+    </div>
+
+    <div class="modal-seccion">
+        <label>2. Elige el Libro donde se guardarán los capítulos:</label>
+        <div id="lista-libros-para-frames" class="lista-libros-popup-estilo">
+            </div>
+    </div>
+
+    <button id="confirmar-generacion-frames-btn" class="modal-button principal-action" onclick="confirmarSeleccionYProcesar()">
+        ✨ Generar en Libro Seleccionado
+    </button>
+</div>
+<style>
+    .ia-control-row { display: flex; justify-content: space-between; align-items: center; gap: 15px; }
+    .ia-control-row label { font-weight: 500; flex-shrink: 0; }
+    .ia-control-row input[type="number"], .ia-control-row select { width: 80px; text-align: center; }
+    .ia-control-row input[type="range"] { flex-grow: 1; }
+    .ia-info-box { 
+        text-align: center; font-size: 0.85em; background-color: rgba(0,0,0,0.05); 
+        padding: 8px; border-radius: 4px; color: #555; margin-top: 10px;
+    }
+    .dark-theme .ia-info-box { background-color: rgba(255,255,255,0.08); color: #ccc; }
+    #generar-aventura-ia-btn-modal:disabled { background-color: #999; cursor: not-allowed; }
+</style>
+
+    <!-- MODAL PERSONALIZADO-->
+
+    <div id="custom-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <p id="modal-text"></p>
+            <p id="modal-progress"></p>
+            <input type="text" id="modal-input" class="modal-input" style="display: none;">
+            <div class="modal-buttons">
+                <button id="modal-cancel-btn" class="btn-base w-auto">Cancelar</button>
+                <button id="modal-ok-btn" class="btn-base w-auto btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-imagenes" class="modal-content" style="display: none;">
+    <div class=" ">
+        <button class="modal-close-btn-fullscreen" onclick="cerrarModalImagenes()">&times;</button>
+        <div class="container">
+            <div class="image-mode-toggle" style="display: none;">
+                <button id="toggle-2d-btn" class="active">2D</button>
+                <button id="toggle-3d-btn">3D</button>
+            </div>
+            <div class="control-panel" id="control-panel-2d">
+                 <textarea class="area-texto" id="user-prompt-input" placeholder="Ej: 'un hechicero de hielo en un bosque nevado', 'un caballero con armadura dorada frente a un castillo'"></textarea>
+                <button id="btn-generate">Diseñar y Renderizar Escena</button>
+                <button id="btn-save-generation" style="display: none;">Guardar en Generaciones</button>
+                <div class="json-importer-container">
+                   
+                    <textarea id="json-input-area" placeholder="Pega aquí el JSON de uno o varios elementos..." class="area-texto"></textarea>
+                    <div class="json-buttons-container">
+                        <button id="btn-process-json" class="control-button">Procesar JSON Pegado</button>
+                        <label for="json-file-input" class="control-button">Cargar Archivo JSON</label>
+                        <input type="file" id="json-file-input" accept=".json,application/json" style="display: none;">
+                    </div>
+                </div>
+
+        
+
+                <div id="render-container"  >
+                    <canvas id="render-canvas" width="512" height="512"></canvas> <p id="status-message"></p> 
+                </div>
+            </div>
+            <div class="control-panel" id="control-panel-3d" style="display: none;">
+                 </div>
+            <div id="generaciones-container" style="display: none;">
+                <div id="generaciones-grid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="r-edit-entity-modal" class="modal-overlay2" style="display: none;">
+    <div class="modal-content2" style="width: 450px; background-color: #2f2f2f; color: white;">
+        <span id="r-edit-entity-close-btn" class="modal-close-button1" style="color: white; top: 10px; right: 15px; font-size: 28px;">&times;</span>
+        <h3>Editando Propiedades de <span id="r-edit-entity-name" style="color: #87ceeb;"></span></h3>
+        
+        <div id="r-edit-entity-form" style="padding: 20px; overflow-y: auto; max-height: 70vh;">
+            
+            <fieldset style="border: 1px solid #555; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                <legend style="padding: 0 5px;">Tamaño (en metros)</legend>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label for="edit-tamano-x">Ancho (X)</label>
+                        <input type="number" id="edit-tamano-x" step="0.1" class="modal-input">
+                    </div>
+                    <div>
+                        <label for="edit-tamano-y">Alto (Y)</label>
+                        <input type="number" id="edit-tamano-y" step="0.1" class="modal-input">
+                    </div>
+                    <div>
+                        <label for="edit-tamano-z">Profundo (Z)</label>
+                        <input type="number" id="edit-tamano-z" step="0.1" class="modal-input">
+                    </div>
+
+<div id="edit-rotacion-container" class="form-group">
+    <label for="edit-rotacion-y">Rotación Y (grados):</label>
+    <input type="number" id="edit-rotacion-y" step="1" value="0">
+</div>
+<div class="form-group" style="grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+    <input type="checkbox" id="edit-es-cubo-3d" style="width: auto; height: 18px;">
+    <label for="edit-es-cubo-3d" style="font-weight: normal;">Renderizar como Cubo 3D</label>
+</div>
+<div class="form-group" style="grid-column: 1 / -1; display: flex; align-items: center; gap: 10px;">
+    <input type="checkbox" id="edit-es-cilindro-3d" style="width: auto; height: 18px;">
+    <label for="edit-es-cilindro-3d" style="font-weight: normal;">Renderizar como Cilindro 3D</label>
+</div>
+                </div>
+            </fieldset>
+
+            <fieldset style="border: 1px solid #555; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                <legend style="padding: 0 5px;">Colisión</legend>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label for="edit-colision-tipo">Tipo</label>
+                        <select id="edit-colision-tipo" class="modal-input">
+                            <option value="ninguna">Ninguna</option>
+                            <option value="capsula">Cápsula</option>
+                            <option value="caja">Caja</option>
+                            <option value="esfera">Esfera</option>
+                        </select>
+                    </div>
+                    <div id="edit-colision-radio-container">
+                        <label for="edit-colision-radio">Radio</label>
+                        <input type="number" id="edit-colision-radio" step="0.1" class="modal-input">
+                    </div>
+                    <div id="edit-colision-altura-container">
+                        <label for="edit-colision-altura">Altura</label>
+                        <input type="number" id="edit-colision-altura" step="0.1" class="modal-input">
+                    </div>
+                </div>
+            </fieldset>
+          <fieldset style="border: 1px solid #555; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+    <legend style="padding: 0 5px;">Ruta de Movimiento</legend>
+    
+    <div id="edit-movimiento-lista" style="margin-bottom: 15px; border-left: 2px solid #555; padding-left: 10px;">
+        </div>
+
+    <div id="edit-movimiento-nuevo" style="background-color: #3f3f3f; padding: 10px; border-radius: 4px;">
+        <h5 style="margin: 0 0 10px 0;">Añadir nuevo paso:</h5>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button id="movimiento-anadir-aleatorio-btn" class="pro6" style="padding: 10px;">🎲</button>
+            <button id="movimiento-seleccionar-coord-btn" class="pro16" style="padding: 10px;">📍</button>
+        </div>
+        <div id="movimiento-params-aleatorio" style="margin-top: 10px; display: none;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: center;">
+                <label for="movimiento-duracion-nuevo">Duración (segundos):</label>
+                <input type="number" id="movimiento-duracion-nuevo" placeholder="Infinito" class="modal-input">
+            </div>
+             <button id="movimiento-confirmar-aleatorio-btn" class="pro5" style="width: 100%; margin-top: 10px;">✔️</button>
+        </div>
+    </div>
+</fieldset>
+ 
+            <button id="r-edit-entity-save-btn" class="pro17" style="width: 100%; padding: 12px; font-size: 16px;">💾</button>
+        </div>
+    </div>
+</div>
+ 
+<div id="conexion" class="pantalla" >
+
+
+
+
+
+</div>
+
+
+<div id="menuweb">
+    <div id="titulo2">
+        <div class="title" onclick="cerrartodo(), abrirVentana('info');">
+            <span>S I L E N</span><span class="os-red"> O S</span>
+        </div>
+
+        <input class="barra" type="text" id="asistente-titulo-input" placeholder="Título del proyecto" value="Nombre De Tu Proyecto">
+
+        <button onclick="cerrartodo(), abrirVentana('procedimiento');" style="display: none;">Libro Ilustrado</button>
+        <button onclick="cerrartodo(), abrirVentana('guion-literario');">📃</button>
+        <button onclick="cerrartodo(), abrirVentana('capitulosh');">📚</button>
+        <button onclick="cerrartodo(), abrirVentana('momentos');">🖱️</button>
+        <button id="bdatos" onclick="cerrartodo(),abrirVentana('renderizador');">🎮</button>
+        <button onclick="cerrartodo(),abrirVentana('programador');">💻</button>
+        <button onclick="cerrartodo(), abrirVentana('escenah');">🎬</button>
+        <button onclick="cerrartodo(),abrirVentana('interactivo');" style="display: none;">🎮</button>
+        <button onclick="cerrartodo(), abrirVentana('personajes'); renderizarPreviewsInicialesDeDatos();">Datos</button>
+        <button onclick="cerrartodo(), abrirVentana('proyecto');">🏗️Proyecto</button>
+        <button id="bguardarjson" onclick="guardarJSON()">💾</button>
+        <input type="file" id="file-load" accept="application/json" onchange="cargarJSON(event)" style="display: none;">
+        <button id="bcargarjson" onclick="document.getElementById('file-load').click()">🗂️</button>
+        <button id="bajustes" onclick="abrirModalConfig()">⚙️</button>
+        <button onclick="abrirModalExportar()">Exportar</button>
+
+        <!-- Área de autenticación Reestructurada -->
+        <div id="auth-container">
+            <!-- Botón de Login (visible cuando no está logueado) -->
+            <button id="login-btn" class="mnml">
+                Iniciar
+            </button>
+            <!-- Información del usuario (visible cuando está logueado) -->
+              <div id="user-info" class="hidden" style="align-items: center; gap: 10px;">
+                <img id="user-pic" onclick="cerrartodo(), abrirVentana('proyecto');" src=" " alt="Foto de perfil" style="top:0%; margin: 0%; width: 40px; height: 40px; border-radius: 50%; margin-right: 30px;">
+                <button id="logout-btn" class="mnml">Salir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+    <!-- ================== -->
+    <!-- MODAL CREADOR DE PERSONAJES -->
+    <!-- ================== -->
+<div id="r-avatar-modal" class="modal-overlay2" style="display: none;">
+    <div class="modal-content2">
+        <span class="modal-close-button1" id="r-avatar-modal-close-btn">&times;</span>
+        <h3>Selecciona un Avatar</h3>
+        <div id="r-avatar-grid" class="palette-container" style="max-height: 60vh; overflow-y: auto; padding: 1rem;">
+            <!-- Los avatares se cargarán aquí dinámicamente -->
+        </div>
+    </div>
+</div>
+
+<div id="visor-overlay">
+    <img id="visor-imagen" src="" alt="Imagen ampliada">
+    <div id="visor-controles">
+        <a id="visor-boton-descargar" href="#" download>Descargar</a>
+        <button id="visor-boton-reemplazar">Reemplazar</button>
+    </div>
+    <input type="file" id="reemplazar-input" accept="image/*" style="display: none;">
+</div>
+
+<div id="progress-bar-container" class="status-indicator">
+    <span id="progress-bar-label">Procesando...</span>
+    <div class="progress-bar-background">
+        <div id="progress-bar-fill"></div>
+    </div>
+    <span id="progress-bar-percentage">0%</span>
+</div>
+
+<div id="image-preview-overlay" class="image-overlay">
+  <span class="close-btn">&times;</span>
+  <img id="enlarged-img" class="enlarged-image-content">
+</div>
+
+<div style="display: none;">      <video autoplay muted loop id="video-fondo">
+        <source src="4.mp4" type="video/mp4">    </video></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+<!-- SCRIPTS MOVED HERE, INSIDE THE BODY TAG -->
+<script type="module">
+  //import { generarToma } from './escenas/geminivideo.js';
+  //window.generarToma = generarToma; 
+</script>
+<!-- 
+
+
+<script src="compositor-escenas-3d.js"></script>
+<script src="escenas/geminivideo.js"></script> 
+<script src="escenas/generacion2d.js"></script>
+
+ This was a duplicate load and has been removed -->
+<script src="mini3d.js"></script>
+
+<script src="momentos-generacion.js"></script>
+<script src="momentos-core.js"></script>
+<script src="momentos-vista.js"></script>
+<script src="momentos-ia.js"></script>
+
+<script src="editor-momento.js"></script> 
+<script src="guion.js"></script>
+<script src="galeria.js"></script> 
+<script src="escenas.js"></script>
+<script src="datos.js"></script>
+<script src="io.js"></script>
+<script src="gemini.js"></script>
+<script src="geminialfa.js"></script>
+<script src="geminivisual.js"></script>
+<script src="generador.js"></script>
+<script src="generador3d.js"></script> <!-- Nuevo script para 3D -->
+
+<script src="compositor-escenas.js"></script> 
+
+<script src="gestionEscenas.js"></script>  
+<script src="exportar.js"></script>
+<script src="exportarjuego.js"></script>
+<script src="exportartomas.js"></script>
+<script src="editor-personajes-head.js"></script>
+<script src="editor-personajes-body.js"></script>
+<script src="editor-personajes-main.js"></script>
+<script type="module" src="animacion2d.js"></script>
+ 
+
+  
+<button id="open-imagenes-modal-btn" class="" style="display: none;" title="Abrir Informe" onclick=" document.getElementById('vistageneral').style.display = 'flex', document.getElementById('personajes').style.display = 'none', document.getElementById('biblioteca').style.display = 'none'; " style="display: none;">👁️‍🗨️</button>
+
+<button id="contextual-action-btn" title="Acción contextual" style="display: none;"> </button>
+
+<script src="https://cdn.jsdelivr.net/npm/leader-line-new@1.1.9/leader-line.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="geminiasistente.js"></script>
+<script src="animaciones.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+
+<script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/" : "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+            "tween": "https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@21.0.0/dist/tween.esm.js"
+        }
+    }
+</script>
+   
+    <script type="importmap">
+        {
+            "imports": {
+                
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+            }
+        }
+    </script>  
+
+    <script src="r-funciones.js"></script>   
+     <script src="r-animaciones.js"></script>
+    <script src="r-exportador.js"></script>
+ 
+    <script src="r-cargador.js"></script>
+    <script src="r-data.js"></script>
+    <script src="r-preview-3d.js"></script>
+    <script src="r-editor.js"></script>
+
+
+<!-- SCRIPTS MOVED HERE, 
+ 
+
+
+
+
+INSIDE THE BODY TAG -->
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+
+<script src="toma.js"></script>
+ 
+<script src="exportarjuego3d.js"></script>
+
+ 
+<script src="animacionessvggemini.js"></script>
+ 
+<script src="libro.js"></script>
+<script src="traduccion.js"></script>
+ 
+
+
+ <script src="accionesinteractivo.js"></script>
+
+ <script src="uiinteractivo.js"></script>
+ <script src="interactivo.js"></script>
+ <script src="diapositivas.js"></script>
+ <script src="biblioteca.js"></script>
+ <script src="ventanas.js"></script>
+
+
+     
+<script src="reescritura.js"></script>        
+      
+
+
+<script src="p-nodes-index.js"></script>
+<script src="p-logicas.js"></script>
+
+<script src="p-gemini-api.js"></script>
+<script src="p-node.js"></script>
+<script src="p-conexion.js"></script>
+<script src="p-ui.js"></script>
+
+<script src="p-interprete.js"></script>
+<script src="p-ejecucion.js"></script>
+<script src="p-main.js"></script>
+<script src="procedimiento.js"></script>
+ <script src="main.js" defer></script>
+
+<!-- Modal Genérico para Edición -->
+ 
+
+
+<div id="edit-modal" class="modal">
+    <div class="modal-content-editor">
+        <div class="modal-header">
+            <h2 id="modal-title">Editar Elemento</h2>
+            <button class="btn btn-close">X</button>
+        </div>
+        <div id="modal-body" class="form-grid">
+            <!-- El contenido del formulario se inyectará aquí -->
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-close">Cancelar</button>
+            <button id="btn-save-modal" class="btn btn-add">💾</button>
+        </div>
+    </div>
+</div>
+<style>#info {display: flex;
+ background-color: white;
+padding: 4%;
+ position: relative;
+ width: 100%; padding-right:0% ;
+padding-left: 6%;  
+    color: #333;
+ font-size: 2.2em;
+ overflow-y: scroll;
+}  </style>
+ <script>
+
+
+
+        function abrirVentana(id) {
+            const ventana = document.getElementById(id);
+            if (ventana) {
+                ventana.style.display = 'flex'; // Usamos flex por la estructura de la ventana
+                // Llama a la función del gestor para actualizar la lista
+                if (window.actualizarGestor) {
+                    window.actualizarGestor();
+                }
+            }
+        }
+    </script>
+     <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggleViewBtn = document.getElementById('bvista');
+        const body = document.body;
+
+        toggleViewBtn.addEventListener('click', () => {
+            body.classList.toggle('clear-view-mode');
+
+            if (body.classList.contains('clear-view-mode')) {
+                toggleViewBtn.innerHTML = '🔳'; // Icono para volver a modo ventana
+                toggleViewBtn.title = 'Cambiar a Vista de Ventanas';
+            } else {
+                toggleViewBtn.innerHTML = '⬜'; // Icono para ir a modo claro
+                toggleViewBtn.title = 'Cambiar a Vista Clara';
+            }
+        });
+    });
+ </script>
+ <script>
+function handleCredentialResponse(response) {
+  // 1. Decodificar la credencial para obtener los datos del usuario
+  const responsePayload = jwt_decode(response.credential);
+
+  // (Opcional) Mantenemos los logs en la consola para depuración
+  console.log("Login exitoso para:", responsePayload.name);
+
+  // 2. Ocultar el botón de "Iniciar Sesión"
+  document.querySelector('.g_id_signin').style.display = 'none';
+  // También es buena idea ocultar el otro div de Google para evitar popups
+  document.getElementById('g_id_onload').style.display = 'none';
+
+
+  // 3. Obtener los elementos del perfil y rellenarlos con los datos
+  const userProfileContainer = document.getElementById('user-profile-container');
+  const userProfilePic = document.getElementById('user-profile-pic');
+  const userProfileName = document.getElementById('user-profile-name');
+
+  userProfilePic.src = responsePayload.picture;
+  userProfileName.innerText = responsePayload.given_name || responsePayload.name.split(' ')[0]; // Muestra el primer nombre
+
+  // 4. Mostrar el contenedor del perfil de usuario
+  userProfileContainer.style.display = 'flex'; // Usamos flex para que se alinee bien
+}
+
+function signOut() {
+  // 1. Ocultamos el perfil del usuario
+  document.getElementById('user-profile-container').style.display = 'none';
+
+  // 2. Mostramos de nuevo el botón de "Iniciar Sesión"
+  document.querySelector('.g_id_signin').style.display = 'block';
+  document.getElementById('g_id_onload').style.display = 'block';
+
+  console.log('El usuario ha cerrado sesión.');
+  
+  // Nota: Esto es un cierre de sesión visual.
+  // Google gestiona las cookies, pero para el usuario, la sesión en tu web ha terminado.
+}
+
+</script>
+<script src="https://unpkg.com/jwt-decode/build/jwt-decode.js"></script>
+</body>
+</html>
