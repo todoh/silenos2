@@ -433,7 +433,7 @@ function actualizarPopupFiltros() {
             if (checkbox.checked) {
                 etiquetasFiltroActivas.add(tag);
             } else {
-                etiquetasFiltroActivas.delete(tag);
+                etiquetasFiltroActivos.delete(tag);
             }
             actualizarPopupFiltros(); 
             actualizarVistaDatos();
@@ -899,33 +899,108 @@ const editorCanvas3D = document.createElement('canvas');
 
     const mejorarSVG = () => mostrarModalMejora(contenedor);
 
-    const editarSVG = () => {
-        const svgActual = contenedor.dataset.svgContent;
-        if (!svgActual) {
-            alert("No hay un SVG para editar. Genera una imagen primero.");
-            return;
-        }
-        if (typeof fabric === 'undefined') {
-            alert("La biblioteca de edición (Fabric.js) no está disponible.");
-            return;
-        }
-        previewImage.style.display = 'none';
-        editorCanvasEl.style.display = 'block';
-        botonAccionesImagen.style.display = 'none';
-        botonGuardarSVG.style.display = 'inline-block';
-        fabricEditorCanvas = new fabric.Canvas(editorCanvasEl, {
-            width: previewContainer.clientWidth,
-            height: previewContainer.clientHeight,
+    // --- INICIO DE LA MODIFICACIÓN ---
+    // Esta es la función que se ejecutará al pulsar "Editar SVG".
+// EN: datos.js
+// REEMPLAZA tu función 'editarSVG' actual por esta versión corregida.
+
+// EN: datos.js
+// REEMPLAZA tu función 'editarSVG' actual por esta versión corregida y mejorada.
+
+const editarSVG = async () => {
+    const svgActual = contenedor.dataset.svgContent;
+    if (!svgActual) {
+        alert("No hay un SVG para editar. Genera una imagen vectorial primero.");
+        return;
+    }
+    if (typeof fabric === 'undefined') {
+        alert("Error: La librería Fabric.js no está disponible para editar el SVG.");
+        return;
+    }
+
+    // Proporciona feedback visual al usuario
+    const botonOriginal = botonAccionesImagen.querySelector('.item-menu-etiqueta');
+    if (botonOriginal) botonOriginal.innerHTML = '⚙️ Ajustando...';
+    botonAccionesImagen.disabled = true;
+
+    try {
+        // Usamos una Promesa para manejar la carga asíncrona del SVG en Fabric.js
+        const nuevoSvgContent = await new Promise((resolve, reject) => {
+            // Se crea un canvas temporal en memoria para hacer la manipulación.
+            const tempCanvas = new fabric.StaticCanvas(null, { width: 512, height: 512 });
+
+            fabric.loadSVGFromString(svgActual, (objects, options) => {
+                if (!objects || objects.length === 0) {
+                    tempCanvas.dispose();
+                    return reject(new Error("El SVG está vacío o no se pudo interpretar."));
+                }
+
+                const group = fabric.util.groupSVGElements(objects, options);
+
+                // --- INICIO DE LA LÓGICA DE CORRECCIÓN ---
+
+                // 1. Calcular el factor de escala para que el grupo ocupe ~98% del canvas,
+                // dejando un pequeño margen estético.
+                const padding = 1;
+                const scaleFactor = Math.min(
+                    (tempCanvas.width * padding) / group.width,
+                    (tempCanvas.height * padding) / group.height
+                );
+                
+                // 2. Aplicar la escala al grupo.
+                group.scale(scaleFactor);
+                
+                // 3. Forzar a Fabric.js a recalcular las coordenadas y dimensiones del objeto
+                // DESPUÉS de haberlo escalado. Este paso es crucial.
+                group.setCoords();
+
+                // 4. Ahora, con las dimensiones actualizadas, calcular y aplicar la posición final.
+                group.set({
+                    // Centrar horizontalmente
+                    left: (tempCanvas.width - group.getScaledWidth()) / 2,
+                    
+                    // Alinear al borde inferior.
+                    // Se resta la altura del objeto a la altura del canvas para que
+                    // el borde inferior del objeto coincida con el borde inferior del canvas.
+                    top: tempCanvas.height - group.getScaledHeight()
+                });
+
+                // --- FIN DE LA LÓGICA DE CORRECCIÓN ---
+
+                tempCanvas.add(group);
+                tempCanvas.renderAll();
+
+                // 5. Exportar el CANVAS COMPLETO como un nuevo SVG.
+                // Esto "fija" las transformaciones (escala y posición) en el nuevo código SVG.
+                const svgExportado = tempCanvas.toSVG({
+                     suppressPreamble: true, // Para un SVG más limpio
+                     viewBox: { x: 0, y: 0, width: 512, height: 512 }
+                });
+
+                tempCanvas.dispose(); // Liberar memoria del canvas temporal
+                resolve(svgExportado);
+            });
         });
-        fabric.loadSVGFromString(svgActual, (objects, options) => {
-            const group = fabric.util.groupSVGElements(objects, options);
-            group.scaleToWidth(fabricEditorCanvas.width * 0.9);
-            group.scaleToHeight(fabricEditorCanvas.height * 0.9);
-            fabricEditorCanvas.add(group);
-            group.center();
-            fabricEditorCanvas.renderAll();
-        });
-    };
+
+        // Actualizar el dataset del elemento con el nuevo SVG corregido
+        contenedor.dataset.svgContent = nuevoSvgContent;
+
+        // Actualizar la previsualización visual usando el nuevo SVG
+        const dataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(nuevoSvgContent)));
+        actualizarVisual(dataUrl, cajaTexto.value);
+
+        alert('El SVG ha sido centrado y alineado al fondo.');
+
+    } catch (error) {
+        console.error("Error al ajustar el SVG:", error);
+        alert(`No se pudo ajustar el SVG: ${error.message}`);
+    } finally {
+        // Restaurar el estado del botón
+        if (botonOriginal) botonOriginal.innerHTML = '✏️ Ajustar SVG';
+        botonAccionesImagen.disabled = false;
+    }
+};
+    // --- FIN DE LA MODIFICACIÓN ---
 
     // Botones que se mantienen fuera del menú
     const botonCargar = document.createElement('button');
@@ -954,7 +1029,7 @@ const editorCanvas3D = document.createElement('canvas');
             { texto: 'Vectorial Pro', emoji: '💎', action: generarVectorialPro },
             { texto: 'Realista', emoji: '😍', action: generarRealista },
             { texto: 'Mejorar SVG', emoji: '📈', action: mejorarSVG },
-            { texto: 'Editar SVG', emoji: '✏️', action: editarSVG }
+            { texto: 'Ajustar SVG', emoji: '✏️', action: editarSVG } // Se cambia el texto a "Ajustar SVG"
         ];
 
         opcionesMenu.forEach(op => {
@@ -1026,18 +1101,39 @@ const editorCanvas3D = document.createElement('canvas');
         }
     };
     
-    botonGuardarSVG.onclick = () => {
-        if (!fabricEditorCanvas) return;
-        const group = new fabric.Group(fabricEditorCanvas.getObjects());
-        contenedor.dataset.svgContent = group.toSVG();
-        actualizarVisual(group.toDataURL({ format: 'png' }), cajaTexto.value);
-        fabricEditorCanvas.dispose();
-        fabricEditorCanvas = null;
-        editorCanvasEl.style.display = 'none';
-        previewImage.style.display = 'block';
-        botonGuardarSVG.style.display = 'none';
-        botonAccionesImagen.style.display = 'inline-block';
+// EN: datos.js -> DENTRO de agregarPersonajeDesdeDatos -> REEMPLAZA el onclick del botón
+botonGuardarSVG.onclick = () => {
+    if (!fabricEditorCanvas) return;
+
+    // --- INICIO DE LA CORRECCIÓN ---
+    // 1. Definimos las opciones de exportación para incluir el viewBox.
+    // El viewBox es lo que guarda el "marco" completo del canvas.
+    const options = {
+        suppressPreamble: true, // Para un SVG más limpio
+        viewBox: {
+            x: 0,
+            y: 0,
+            width: fabricEditorCanvas.width,
+            height: fabricEditorCanvas.height
+        }
     };
+    // 2. Guardamos el SVG del canvas completo, no solo del grupo.
+    // Esto asegura que las coordenadas sean absolutas respecto al canvas.
+    const nuevoSvgContent = fabricEditorCanvas.toSVG(options);
+    contenedor.dataset.svgContent = nuevoSvgContent;
+    // --- FIN DE LA CORRECCIÓN ---
+    
+    // Actualizamos la previsualización usando el canvas actual para que coincida.
+    actualizarVisual(fabricEditorCanvas.toDataURL({ format: 'png' }), cajaTexto.value);
+    
+    // Limpieza
+    fabricEditorCanvas.dispose();
+    fabricEditorCanvas = null;
+    editorCanvasEl.style.display = 'none';
+    previewImage.style.display = 'block';
+    botonGuardarSVG.style.display = 'none';
+    botonAccionesImagen.style.display = 'inline-block';
+};
 
     botonEliminar.onclick = () => {
         if (confirm('¿Estás seguro de que quieres eliminar este dato?')) {
@@ -1065,23 +1161,53 @@ const editorCanvas3D = document.createElement('canvas');
     };
 
     // --- Renderizado Inicial de la Imagen ---
-    if (svgContent && !imagen) {
+   if (svgContent && !imagen) {
         if (typeof fabric !== 'undefined') {
             const tempCanvasEl = document.createElement('canvas');
-            const tempFabricCanvas = new fabric.Canvas(tempCanvasEl, { width: 750, height: 750 });
-            fabric.loadSVGFromString(svgContent, (objects, options) => {
-                if (!objects || objects.length === 0) {
-                    tempFabricCanvas.dispose();
-                    return;
-                }
-                const group = fabric.util.groupSVGElements(objects, options);
-                const scaleFactor = Math.min((tempFabricCanvas.width * 0.9) / group.width, (tempFabricCanvas.height * 0.9) / group.height);
-                group.scale(scaleFactor).center();
-                tempFabricCanvas.add(group).renderAll();
-                actualizarVisual(tempFabricCanvas.toDataURL({ format: 'png' }), descripcion);
-                tempFabricCanvas.dispose();
-            });
+            // Usamos un tamaño de canvas de previsualización estándar
+            const tempCanvasWidth = 250;
+            const tempCanvasHeight = 250;
+            const tempFabricCanvas = new fabric.Canvas(tempCanvasEl, { width: tempCanvasWidth, height: tempCanvasHeight });
+
+          fabric.loadSVGFromString(svgContent, (objects, options) => {
+    if (!objects || objects.length === 0) {
+        tempFabricCanvas.dispose();
+        return;
+    }
+    const group = fabric.util.groupSVGElements(objects, options);
+
+    // --- INICIO DE LA NUEVA CORRECCIÓN ---
+
+    // 1. Definir un margen interior (padding).
+    const padding = 0.95; // Usamos el 95% del espacio
+    const maxWidth = tempCanvasWidth * padding;
+    const maxHeight = tempCanvasHeight * padding;
+
+    // 2. Escalar el grupo preservando su proporción original.
+    if (group.width / group.height > maxWidth / maxHeight) {
+        group.scaleToWidth(maxWidth);
+    } else {
+        group.scaleToHeight(maxHeight);
+    }
+
+    // 3. Posicionar el grupo manualmente.
+    const bottomMargin = (tempCanvasHeight * (1 - padding));
+    group.set({
+        // Se calcula la posición izquierda para centrar el objeto.
+        // (Ancho del canvas - Ancho del grupo escalado) / 2
+        left: (tempCanvasWidth - group.getScaledWidth()) / 2,
+        
+        // Se alinea al fondo como antes.
+        top: tempCanvasHeight - group.getScaledHeight() - bottomMargin
+    });
+    // --- FIN DE LA NUEVA CORRECCIÓN ---
+
+    tempFabricCanvas.add(group).renderAll();
+    actualizarVisual(tempFabricCanvas.toDataURL({ format: 'png' }), descripcion);
+    tempFabricCanvas.dispose();
+});
         } else {
+            // Fallback si Fabric.js no está disponible
             actualizarVisual('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgContent), descripcion);
         }
     } else {
@@ -1090,8 +1216,7 @@ const editorCanvas3D = document.createElement('canvas');
 
     return contenedor;
 }
-
-
+ 
 /**
  * Inicializa el modal de IA una sola vez, poblando el selector de arcos.
  * Es importante que la variable 'opcionesArco' esté disponible globalmente.

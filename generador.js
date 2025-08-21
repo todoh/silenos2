@@ -783,9 +783,9 @@ async function generarImagenSuperrealistaDesdePrompt(userPrompt, modelConfig = {
 
     const defaultModels = {
         // Usamos un modelo rápido para el primer SVG base
-        step1: 'gemini-2.5-pro',
+        step1: 'gemini-2.5-flash',
         // Usamos un modelo más potente para el refinamiento
-        step2: 'gemini-2.5-pro',
+        step2: 'gemini-2.5-flash',
         // Y un modelo rápido para el toque final
         step3: 'gemini-2.5-flash'
     };
@@ -829,119 +829,66 @@ async function generarImagenSuperrealistaDesdePrompt(userPrompt, modelConfig = {
     return { imagen: pngDataUrl, svgContent: finalSvg };
 }
 
+/**
+ * VERSIÓN MODIFICADA: PREGUNTA-RESPUESTA DIRECTA (SIN STREAMING)
+ * Esta función llama a la API de Gemini y espera la respuesta completa
+ * antes de devolverla, eliminando el efecto de "thinking".
+ */
 async function callGenerativeApi(prompt, model = 'gemini-2.5-flash', expectJson = true) {
-    // --- INICIO DE LA MODIFICACIÓN PARA STREAMING ---
-
-    // Por convención, la función buscará este elemento para mostrar el efecto "thinking".
-    // Debes asegurarte de que este elemento exista en tu HTML si quieres ver el efecto.
-    const streamingTargetId = 'ia-streaming-output';
-    const outputElement = document.getElementById(streamingTargetId);
-
-    // El efecto de escritura solo se mostrará si no esperamos un JSON y si el elemento existe.
-    const showThinkingEffect = !expectJson && outputElement;
-
-    // Si vamos a mostrar el efecto, limpiamos el contenido previo del contenedor.
-    if (showThinkingEffect) {
-        outputElement.innerHTML = '';
-    }
-
-    // Usamos el endpoint de streaming de la API.
     // La variable 'apiKey' debe estar disponible en el scope global.
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${apiKey}&alt=sse`;
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const payload = {
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {},
-        safetySettings: [
-            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
-        ]
+        // No se necesitan configuraciones de safety o generationConfig complejas para esto.
     };
 
-    // Si se espera un JSON, lo especificamos en la configuración.
-    // El efecto visual no se activará, pero seguiremos usando el stream para obtener la respuesta.
+    // Si se espera un JSON, se lo pedimos a la API directamente en el payload.
     if (expectJson) {
-        payload.generationConfig.responseMimeType = "application/json";
+        payload.generationConfig = {
+            responseMimeType: "application/json",
+        };
     }
 
-    const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-    if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`Error en la API (${model}): ${response.statusText}. Cuerpo: ${errorBody}`);
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let fullRawText = ''; // Variable para acumular la respuesta completa.
-
-    // Leemos el stream hasta que se complete.
-    while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-            break; // Se terminó el stream.
+        if (!response.ok) {
+            const errorBody = await response.json(); // Intentamos obtener el error en formato JSON
+            throw new Error(`Error en la API (${model}): ${errorBody.error.message}`);
         }
 
-        const chunkText = decoder.decode(value);
-        const lines = chunkText.split('\n');
+        const data = await response.json();
+        const fullRawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-        for (const line of lines) {
-            if (line.startsWith('data: ')) {
-                const jsonString = line.substring(6).trim();
-                if (!jsonString) continue;
+        if (!fullRawText) {
+            throw new Error("La IA no devolvió contenido en la respuesta.");
+        }
 
-                try {
-                    const data = JSON.parse(jsonString);
-                    const newText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                    if (newText) {
-                        // Acumulamos el texto para el resultado final.
-                        fullRawText += newText;
-
-                        // Si el efecto está activado, actualizamos el DOM.
-                        if (showThinkingEffect) {
-                            // Reemplazamos saltos de línea por <br> para una correcta visualización en HTML.
-                            outputElement.innerHTML += newText.replace(/\n/g, '<br>');
-                        }
-                    }
-                } catch (error) {
-                    console.warn("Fallo al parsear un chunk del stream (ignorado):", jsonString);
-                }
+        // La lógica final es muy similar, pero sin el bucle de streaming.
+        if (expectJson) {
+            try {
+                // Asumimos que la API ya devuelve JSON limpio cuando se solicita.
+                return JSON.parse(fullRawText);
+            } catch (error) {
+                console.error("Fallo al parsear JSON. String recibido:", fullRawText);
+                throw new Error(`La respuesta no contenía un JSON válido.`);
             }
+        } else {
+            // Devuelve el texto limpio, eliminando los bloques de código.
+            return fullRawText.replace(/```svg\n?/, '').replace(/```$/, '');
         }
-    }
 
-    // --- FIN DE LA MODIFICACIÓN PARA STREAMING ---
-
-    // A partir de aquí, la lógica es la misma que la original, pero usando 'fullRawText'.
-    if (!fullRawText) {
-        console.error("Respuesta de API inesperada (stream vacío):", fullRawText);
-        throw new Error("La IA no devolvió contenido en la respuesta.");
-    }
-
-    if (expectJson) {
-        try {
-                        const jsonLimpio = limpiarYExtraerJson(fullRawText, `modelo ${model}`);
-            return JSON.parse(jsonLimpio);
-
-            // Devolvemos el JSON parseado.
-          //  return JSON.parse(fullRawText);
-        } catch (error) {
-            console.error("Fallo al parsear JSON. String recibido:", fullRawText);
-            throw new Error(`La respuesta de la API para el modelo ${model} no contenía un JSON válido.`);
-        }
-    } else {
-        // Devolvemos el texto limpio, igual que en la función original.
-        return fullRawText.replace(/```svg\n?/, '').replace(/```$/, '');
+    } catch (error) {
+        console.error("Error durante la llamada a callGenerativeApi:", error);
+        // Re-lanzamos el error para que la función que la llamó pueda manejarlo.
+        throw error;
     }
 }
-
  
 
 // --- INICIALIZACIÓN ---

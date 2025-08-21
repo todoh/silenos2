@@ -102,11 +102,12 @@ async function generarGAME(nombreMomentoInicial) {
             top: 0; left: 0; width: 100%; height: 100%;
             background-color: #000;
         }
-        #game-image-bg {
-            width: 100%; height: 100%;
-            object-fit: cover; /* El fondo cubre todo el espacio */
-            object-position: center;
-        }
+       #game-image-bg {
+    width: 100%; /* La imagen debe ocupar el 100% del ancho de su contenedor */
+    height: 100%; /* Y el 100% del alto */
+    object-fit: cover !important; /* Mantiene la proporción y cubre todo el espacio, recortando lo que sobre */
+    object-position: center bottom; /* Se asegura de que la imagen permanezca centrada */
+}
         /* --- NUEVO: Contenedor para las entidades superpuestas --- */
         #game-entities-overlay {
             position: absolute;

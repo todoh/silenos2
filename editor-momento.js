@@ -67,8 +67,7 @@ function inicializarPanelEdicion() {
     s.descripcionInput?.addEventListener('input', actualizarDatosNodo);
     s.agregarAccionBtn.addEventListener('click', () => agregarNuevaAccionAPanel());
     
-    // --- CAMBIO CLAVE: El botón de añadir entidad ahora abre el modal ---
-    agregarEntidadBtn.addEventListener('click', () => abrirModalSeleccionEntidad());
+    agregarEntidadBtn.addEventListener('click', abrirModalSeleccionEntidad);
 
     console.log('[EditorMomento] Inicialización completada.');
 }
@@ -87,7 +86,7 @@ function mostrarPanelEdicion(nodo) {
 
     // Poblar entorno, entidades y acciones
     const entornoData = JSON.parse(nodo.dataset.entorno || '{}');
-    poblarEntornoPanel(entornoData); // Mantenemos la lógica del entorno
+    poblarEntornoPanel(entornoData); 
     
     const entidadesData = JSON.parse(nodo.dataset.entidades || '[]');
     poblarEntidadesPanel(entidadesData);
@@ -103,7 +102,7 @@ function ocultarPanelEdicion() {
     if (panelState.panelElement) panelState.panelElement.classList.remove('visible');
     if (panelState.nodoActual) panelState.nodoActual.classList.remove('momento-seleccionado');
     panelState.nodoActual = null;
-    if (window.previsualizacionActiva) dibujarConexiones();
+    if (window.previsualizacionActiva && typeof dibujarConexiones === 'function') dibujarConexiones();
 }
 
 /**
@@ -123,12 +122,10 @@ function actualizarDatosNodo() {
     };
     nodo.dataset.entorno = JSON.stringify(entornoData);
 
-    // --- CAMBIO CLAVE: Guardar datos de las Entidades simplificadas ---
    const entidadesData = Array.from(s.entidadesContainer.querySelectorAll('.entidad-item')).map(item => {
     const alturaInput = item.querySelector('.entidad-altura-input');
     return {
         recurso: item.dataset.recurso,
-        // Leemos el valor del input, lo convertimos a número y ponemos 65 si falla
         altura: parseInt(alturaInput.value, 10) || 65
     };
 }).filter(e => e.recurso);
@@ -141,16 +138,14 @@ nodo.dataset.entidades = JSON.stringify(entidadesData);
     })).filter(a => a.textoBoton && a.idDestino);
     nodo.dataset.acciones = JSON.stringify(accionesData);
 
-    if (window.previsualizacionActiva) dibujarConexiones();
+    if (window.previsualizacionActiva && typeof dibujarConexiones === 'function') dibujarConexiones();
 }
 
  
 /**
  * Crea y muestra un modal con una cuadrícula de todos los "Datos" disponibles.
- * --- VERSIÓN MEJORADA CON DEPURACIÓN ---
  */
 function abrirModalSeleccionEntidad() {
-    // Evita abrir múltiples modales
     if (document.getElementById('modal-seleccion-entidad')) return;
 
     const modalOverlay = document.createElement('div');
@@ -173,52 +168,32 @@ function abrirModalSeleccionEntidad() {
     const gridContainer = modalContent.querySelector('.modal-body-grid');
     const todosLosDatos = document.querySelectorAll('#listapersonajes .personaje');
 
-    // 1. Mensaje de depuración principal
-    console.log(`[Modal Entidades] Buscando datos... Encontrados ${todosLosDatos.length} elementos de 'Datos'.`);
-
     if (todosLosDatos.length === 0) {
-        gridContainer.innerHTML = '<p style="color: #ffcc00;">No se encontraron datos en la aplicación. El proceso de carga del proyecto pudo haber fallado. Revisa la consola en busca de errores rojos.</p>';
+        gridContainer.innerHTML = '<p>No se encontraron "Datos" para añadir como entidades.</p>';
     } else {
-        let itemsAñadidos = 0;
-        todosLosDatos.forEach((datoEl, index) => {
+        todosLosDatos.forEach(datoEl => {
             const nombre = datoEl.querySelector('.nombreh')?.value.trim();
-            const imgEl = datoEl.querySelector('.personaje-visual img');
-            
-            // Usamos getAttribute para ser más fiables, incluso si la imagen no ha cargado visualmente.
-            const imgSrc = imgEl ? imgEl.getAttribute('src') : null;
-
-            // 2. Mensaje de depuración por cada dato
-            console.log(`[Modal Entidades] Procesando dato #${index + 1}: Nombre='${nombre}', Img Element='${imgEl ? 'OK' : 'NO Encontrado'}', Img Src='${imgSrc ? 'OK' : 'NO Encontrado'}'`);
+            const imgSrc = datoEl.querySelector('.personaje-visual img')?.src;
 
             if (nombre && imgSrc && imgSrc.trim() !== '' && !imgSrc.endsWith('/')) {
                 const gridItem = document.createElement('div');
                 gridItem.className = 'grid-item-entidad';
-                gridItem.innerHTML = `
-                    <img src="${imgSrc}" alt="${nombre}" />
-                    <span>${nombre}</span>
-                `;
+                gridItem.innerHTML = `<img src="${imgSrc}" alt="${nombre}" /><span>${nombre}</span>`;
                 gridItem.onclick = () => {
                     agregarEntidadDesdeDato(nombre);
                     cerrarModalSeleccionEntidad();
                 };
                 gridContainer.appendChild(gridItem);
-                itemsAñadidos++;
             }
         });
-
-        // 3. Mensaje de feedback si se encontraron datos pero ninguno era válido
-        if (itemsAñadidos === 0 && todosLosDatos.length > 0) {
-            gridContainer.innerHTML = `<p style="color: #ffcc00;">Se encontraron ${todosLosDatos.length} datos, pero ninguno tenía un nombre o imagen válidos para mostrar. Revisa los mensajes de depuración en la consola (F12).</p>`;
-        }
     }
 
     modalContent.querySelector('.modal-close-btn').onclick = cerrarModalSeleccionEntidad;
     modalOverlay.onclick = (e) => {
-        if (e.target === modalOverlay) {
-            cerrarModalSeleccionEntidad();
-        }
+        if (e.target === modalOverlay) cerrarModalSeleccionEntidad();
     };
 }
+ 
 function cerrarModalSeleccionEntidad() {
     const modal = document.getElementById('modal-seleccion-entidad');
     if (modal) modal.remove();
@@ -232,8 +207,200 @@ function agregarEntidadDesdeDato(nombreDato) {
     if (!panelState.nodoActual) return;
     const nuevoElemento = crearElementoEntidadPanel({ recurso: nombreDato });
     panelState.entidadesContainer.appendChild(nuevoElemento);
-    actualizarDatosNodo(); // Guardar el cambio inmediatamente
+    actualizarDatosNodo();
 }
+/**
+ * [CORREGIDO] - Reemplaza la función original con esta.
+ * Hemos hecho el código más robusto, asegurando que encuentra los botones
+ * antes de intentar asignarles un evento 'click'.
+ */
+function poblarEntornoPanel(data = {}) {
+    const container = panelState.entornoContainer;
+    container.innerHTML = `
+        <div class="panel-campo">
+            <label>Textura Suelo:</label>
+            <select id="entorno-suelo-select">
+                <option value="">-- Sin Textura --</option>
+            </select>
+        </div>
+        <div class="panel-campo">
+            <label>Color Cielo:</label>
+            <input type="color" id="entorno-cielo-input" value="${data.colorCielo || '#87ceeb'}">
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button id="btn-ilustrar-momento-ia" class="btn-accion-agregar" style="flex: 1;">
+                ✨ Ilustrar con IA
+            </button>
+            <button id="btn-seleccionar-fondo-dato" class="btn-accion-agregar" style="flex: 1;">
+                🖼️ Seleccionar Fondo
+            </button>
+        </div>
+    `;
+    const selectSuelo = container.querySelector('#entorno-suelo-select');
+    const datosContainer = document.getElementById('listapersonajes');
+    if (datosContainer) {
+        const datosItems = datosContainer.querySelectorAll('.personaje');
+        datosItems.forEach(item => {
+            const nombreEl = item.querySelector('.nombreh');
+            const imgEl = item.querySelector('.personaje-visual img');
+            if (nombreEl && imgEl && imgEl.src) {
+                const nombre = nombreEl.value.trim();
+                const option = document.createElement('option');
+                option.value = nombre;
+                option.textContent = nombre;
+                selectSuelo.appendChild(option);
+            }
+        });
+    }
+    selectSuelo.value = data.texturaSuelo || '';
+
+    // --- SECCIÓN DE LISTENERS REVISADA PARA MAYOR ROBUSTEZ ---
+    const btnIlustrar = container.querySelector('#btn-ilustrar-momento-ia');
+    const btnSeleccionarFondo = container.querySelector('#btn-seleccionar-fondo-dato');
+
+    if (btnIlustrar) {
+        btnIlustrar.addEventListener('click', () => {
+            if (typeof generarYRefinarImagenParaNodo === 'function') {
+                generarYRefinarImagenParaNodo();
+            } else {
+                alert('La función de ilustración por IA no está disponible.');
+            }
+        });
+    }
+
+    if (btnSeleccionarFondo) {
+        btnSeleccionarFondo.addEventListener('click', abrirModalSeleccionFondo);
+    } else {
+        // Este mensaje aparecerá en la consola si el botón no se encuentra por alguna razón.
+        console.error("Error: No se encontró el botón 'Seleccionar Fondo'.");
+    }
+    
+    container.querySelectorAll('input, select').forEach(input => input.addEventListener('input', actualizarDatosNodo));
+}
+
+
+/**
+ * [MODIFICADO] - Abre el modal para seleccionar el fondo.
+ * Ahora busca el código SVG original del "Dato" seleccionado.
+ */
+function abrirModalSeleccionFondo() {
+    const modalExistente = document.getElementById('modal-seleccion-entidad');
+    if (modalExistente) {
+        modalExistente.remove();
+    }
+
+    const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'modal-seleccion-entidad';
+    modalOverlay.className = 'modal-overlay';
+
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content';
+    modalContent.innerHTML = `
+        <div class="modal-header">
+            <h2>Seleccionar Imagen de Fondo</h2>
+            <button class="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body-grid"></div>
+    `;
+
+    modalOverlay.appendChild(modalContent);
+    document.body.appendChild(modalOverlay);
+
+    const gridContainer = modalContent.querySelector('.modal-body-grid');
+    const todosLosDatos = document.querySelectorAll('#listapersonajes .personaje');
+
+    if (todosLosDatos.length === 0) {
+        gridContainer.innerHTML = '<p>No se encontraron "Datos" para usar como fondo.</p>';
+    } else {
+        todosLosDatos.forEach(datoEl => {
+            const nombre = datoEl.querySelector('.nombreh')?.value.trim();
+            const imgEl = datoEl.querySelector('.personaje-visual img');
+            const imgSrc = imgEl ? imgEl.getAttribute('src') : null;
+
+            if (nombre && imgSrc && imgSrc.trim() !== '' && !imgSrc.endsWith('/')) {
+                const gridItem = document.createElement('div');
+                gridItem.className = 'grid-item-entidad';
+                gridItem.innerHTML = `<img src="${imgSrc}" alt="${nombre}" /><span>${nombre}</span>`;
+                
+                // --- MEJORA CLAVE ---
+                // Al hacer clic, buscamos el SVG original y lo pasamos a la función de aplicar.
+                gridItem.onclick = () => {
+                    const datoOriginalEl = Array.from(document.querySelectorAll('#listapersonajes .personaje')).find(p => p.querySelector('.nombreh')?.value.trim() === nombre);
+                    let svgCode = null;
+                    if (datoOriginalEl) {
+                        // CORRECCIÓN: Se busca el SVG en el dataset, no como un elemento hijo.
+                        svgCode = datoOriginalEl.dataset.svgContent || null;
+                    }
+                    aplicarFondoDesdeDato(imgSrc, svgCode);
+                    cerrarModalSeleccionFondo();
+                };
+                gridContainer.appendChild(gridItem);
+            }
+        });
+    }
+
+    modalContent.querySelector('.modal-close-btn').onclick = cerrarModalSeleccionFondo;
+    modalOverlay.onclick = (e) => {
+        if (e.target === modalOverlay) cerrarModalSeleccionFondo();
+    };
+}
+/**
+ * [MODIFICADO] Cierra el modal de selección de fondo.
+ */
+function cerrarModalSeleccionFondo() {
+    const modal = document.getElementById('modal-seleccion-entidad');
+    if (modal) modal.remove();
+}
+
+/**
+ * [MODIFICADO] Aplica la imagen y "normaliza" el SVG para un correcto escalado.
+ * @param {string} imgSrc - La URL de la imagen para la previsualización.
+ * @param {string|null} svgCode - El código HTML del SVG, si se encontró.
+ */
+function aplicarFondoDesdeDato(imgSrc, svgCode = null) {
+    if (!panelState.nodoActual) return;
+    const nodo = panelState.nodoActual;
+    
+    const imgElement = nodo.querySelector('.momento-imagen');
+    if (imgElement) {
+        imgElement.src = imgSrc; // Pone una imagen de preview mientras procesa el SVG.
+        nodo.classList.add('con-imagen');
+        
+        if (svgCode) {
+            // --- INICIO DE LA SOLUCIÓN SENCILLA ---
+            // Para asegurar que el SVG se centre y escale, se modifica su código.
+            const parser = new DOMParser();
+            const svgDoc = parser.parseFromString(svgCode, "image/svg+xml");
+            const svgElement = svgDoc.documentElement;
+
+            // Se añaden los atributos para que ocupe el 100% del espacio y se centre.
+            svgElement.setAttribute('width', '100%');
+            svgElement.setAttribute('height', '100%');
+            svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+            // Se eliminan 'x' e 'y' para evitar desplazamientos.
+            svgElement.removeAttribute('x');
+            svgElement.removeAttribute('y');
+
+            const serializer = new XMLSerializer();
+            const svgCorregido = serializer.serializeToString(svgElement);
+
+            // Se guarda y muestra el SVG corregido.
+            nodo.dataset.svgIlustracion = svgCorregido;
+            const svgDataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgCorregido)));
+            imgElement.src = svgDataUrl;
+            // --- FIN DE LA SOLUCIÓN ---
+
+        } else {
+            // Si no es un SVG, se borra el dato SVG anterior.
+            delete nodo.dataset.svgIlustracion;
+        }
+    }
+}
+
+
+// --- FIN DE LAS NUEVAS FUNCIONES ---
 
 
 // --- FUNCIONES PARA POBLAR EL PANEL (ACTUALIZADAS) ---
@@ -253,7 +420,6 @@ function crearElementoEntidadPanel(data = { recurso: '', altura: 65 }) {
     div.className = 'entidad-item item-panel';
     div.dataset.recurso = data.recurso;
 
-    // Se añade el input de altura con un valor por defecto de 65
     div.innerHTML = `
         <span class="entidad-nombre">${data.recurso}</span>
         <div class="entidad-controles">
@@ -264,60 +430,18 @@ function crearElementoEntidadPanel(data = { recurso: '', altura: 65 }) {
         </div>
     `;
 
-    // Se elimina el botón "Cambiar" que era redundante y se simplifican los controles.
-    // El evento de borrado no cambia.
     div.querySelector('.delete-item-btn').onclick = () => {
         div.remove();
         actualizarDatosNodo();
     };
     
-    // IMPORTANTE: El nuevo input también debe actualizar los datos al cambiar
     div.querySelector('.entidad-altura-input').addEventListener('input', actualizarDatosNodo);
 
     return div;
 }
 
 
-// --- FUNCIONES LEGADO (Mantenidas para Entorno y Acciones) ---
-
-function poblarEntornoPanel(data = {}) {
-    // (Esta función no se modifica, se mantiene como estaba)
-    const container = panelState.entornoContainer;
-    container.innerHTML = `
-        <div class="panel-campo">
-            <label>Textura Suelo:</label>
-            <select id="entorno-suelo-select">
-                <option value="">-- Sin Textura --</option>
-            </select>
-        </div>
-        <div class="panel-campo">
-            <label>Color Cielo:</label>
-            <input type="color" id="entorno-cielo-input" value="${data.colorCielo || '#87ceeb'}">
-        </div>
-        <button id="btn-ilustrar-momento-ia" class="btn-accion-agregar" style="width: 100%; margin-top: 10px;">
-            ✨ Ilustrar Momento con IA
-        </button>
-    `;
-    const selectSuelo = container.querySelector('#entorno-suelo-select');
-    const datosContainer = document.getElementById('listapersonajes');
-    if (datosContainer) {
-        const datosItems = datosContainer.querySelectorAll('.personaje');
-        datosItems.forEach(item => {
-            const nombreEl = item.querySelector('.nombreh');
-            const imgEl = item.querySelector('.personaje-visual img');
-            if (nombreEl && imgEl && imgEl.src) {
-                const nombre = nombreEl.value.trim();
-                const option = document.createElement('option');
-                option.value = nombre;
-                option.textContent = nombre;
-                selectSuelo.appendChild(option);
-            }
-        });
-    }
-    selectSuelo.value = data.texturaSuelo || '';
-    container.querySelector('#btn-ilustrar-momento-ia').addEventListener('click', generarYRefinarImagenParaNodo);
-    container.querySelectorAll('input, select').forEach(input => input.addEventListener('input', actualizarDatosNodo));
-}
+ 
 
 function poblarAccionesPanel(acciones = []) {
     const container = panelState.accionesContainer;
