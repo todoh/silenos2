@@ -2368,59 +2368,47 @@ async function handleVisualPromptInput(event) {
     const personajeDIV = textarea.closest('.personaje');
     if (!personajeDIV) return;
 
-    // Resetea el SVG si el contenido no es un JSON de modelo 3D
-    const limpiarImagenPrevia = () => {
-        const imgPreview = personajeDIV.querySelector('.personaje-visual img');
-        const imgEditor = personajeDIV.querySelector('.edit-preview-image');
-        if (imgPreview) imgPreview.src = '';
-        if (imgEditor) imgEditor.src = '';
-        delete personajeDIV.dataset.svgContent; // Limpia el SVG guardado
-    };
+    // --- INICIO DE LA MODIFICACIÓN ---
+    // 1. CONDICIÓN DE SEGURIDAD:
+    // Si el texto NO empieza con la estructura de tu modelo 3D,
+    // la función se detiene INMEDIATAMENTE. No hace nada.
+    if (!texto.startsWith('{ "objects": [ {')) {
+        return; // No borra nada, no renderiza nada.
+    }
+    // --- FIN DE LA MODIFICACIÓN ---
 
     let modelData = null;
     try {
+        // 2. Ahora que sabemos que el formato es el correcto, intentamos interpretarlo.
         const parsed = JSON.parse(texto);
-        // Comprobamos las posibles estructuras de un modelo 3D
         if (parsed && typeof parsed === 'object' && (Array.isArray(parsed.objects) || (parsed.model && Array.isArray(parsed.model.objects)))) {
-            modelData = parsed.model || parsed; // Usamos el objeto 'model' si existe, si no, el objeto entero
+            modelData = parsed.model || parsed;
         } else {
-            limpiarImagenPrevia();
-            return;
+            return; // El formato empezó bien pero la estructura es inválida, no hacemos nada.
         }
     } catch (e) {
-        // Si no es un JSON válido, limpiamos cualquier previsualización 3D anterior y salimos.
-        limpiarImagenPrevia();
+        // El JSON empezó bien pero está malformado. Tampoco hacemos nada.
         return;
     }
 
-    // Si tenemos datos de modelo válidos, generamos la previsualización
+    // 3. Si todo es correcto, generamos la previsualización 3D.
     if (modelData) {
         try {
-            // Usamos la función que ya existe en r-editor.js
-            if (typeof generate3DPreview !== 'function') {
-                console.warn("La función generate3DPreview() no está disponible.");
-                return;
-            }
-
+            if (typeof generate3DPreview !== 'function') return;
             const previewDataUrl = await generate3DPreview(modelData);
 
-            // Actualizamos la imagen en la vista principal de Datos
             const imgPreview = personajeDIV.querySelector('.personaje-visual img');
             if (imgPreview) {
                 imgPreview.src = previewDataUrl;
                 imgPreview.classList.remove('hidden');
             }
 
-            // Actualizamos la imagen en la vista de edición del Dato
             const imgEditor = personajeDIV.querySelector('.edit-preview-image');
             if (imgEditor) {
                 imgEditor.src = previewDataUrl;
                 imgEditor.style.display = 'block';
             }
-            
-            // Guardamos el JSON como si fuera un SVG para mantener la consistencia
-            personajeDIV.dataset.svgContent = texto; 
-
+            personajeDIV.dataset.svgContent = texto;
         } catch (error) {
             console.error("Error al generar la previsualización 3D en tiempo real:", error);
         }

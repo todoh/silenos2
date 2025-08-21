@@ -1,5 +1,5 @@
 /**
- * Genera un archivo HTML interactivo a partir de los momentos del lienzo, usando sus nombres como identificadores.
+ * Genera un archivo HTML interactivo a partir de los momentos del lienzo, superponiendo las entidades.
  * @param {string} nombreMomentoInicial - El NOMBRE del primer momento que se mostrará.
  */
 async function generarGAME(nombreMomentoInicial) {
@@ -16,7 +16,7 @@ async function generarGAME(nombreMomentoInicial) {
 
     const nodosMomento = document.querySelectorAll('#momentos-lienzo .momento-nodo');
     
-    // --- PASO 1: Validar nombres y crear mapas (sin cambios, tu lógica es perfecta) ---
+    // --- PASO 1: Validar nombres y crear mapas de IDs ---
     const idToSanitizedNameMap = new Map();
     const sanitizedNameCheck = new Map();
     let hasDuplicates = false;
@@ -46,7 +46,17 @@ async function generarGAME(nombreMomentoInicial) {
         return;
     }
     
-    // --- [MODIFICADO] PASO 2: Recopilar datos en un objeto JSON en lugar de HTML ---
+    // --- PASO 2: Crear un mapa con las imágenes de todos los datos ---
+    const datosImagenMap = new Map();
+    document.querySelectorAll('#listapersonajes .personaje').forEach(datoEl => {
+        const nombre = datoEl.querySelector('.nombreh')?.value.trim();
+        const imgSrc = datoEl.querySelector('.personaje-visual img')?.src;
+        if (nombre && imgSrc) {
+            datosImagenMap.set(nombre, imgSrc);
+        }
+    });
+
+    // --- PASO 3: Recopilar todos los datos de los momentos en un objeto JSON ---
     const momentosData = {};
     for (const nodo of nodosMomento) {
         const titulo = nodo.querySelector('.momento-titulo').textContent;
@@ -56,108 +66,164 @@ async function generarGAME(nombreMomentoInicial) {
         const accionesMapeadas = accionesOriginales.map(accion => ({
             ...accion,
             idDestino: idToSanitizedNameMap.get(accion.idDestino) || ''
-        })).filter(accion => accion.idDestino); // Filtra acciones con destino inválido
+        })).filter(accion => accion.idDestino);
+        
+        // --- CAMBIO CLAVE: Incluimos las entidades ---
+        const entidades = JSON.parse(nodo.dataset.entidades || '[]');
 
-     // dentro del bucle for (const nodo of nodosMomento)
-momentosData[sanitizedTitulo] = {
-    titulo: titulo,
-    descripcion: nodo.dataset.descripcion || '',
-    // Nuevo: Pasamos el código SVG crudo. Dejamos el .src como fallback por si hay imágenes antiguas.
-    svg: nodo.dataset.svgIlustracion || '', 
-    imagenFallback: nodo.querySelector('.momento-imagen').src,
-    acciones: accionesMapeadas
-};
+        momentosData[sanitizedTitulo] = {
+            titulo: titulo,
+            descripcion: nodo.dataset.descripcion || '',
+            svg: nodo.dataset.svgIlustracion || '', 
+            imagenFallback: nodo.querySelector('.momento-imagen').src,
+            acciones: accionesMapeadas,
+            entidades: entidades // Añadimos el array de entidades
+        };
     }
 
-    // --- [MODIFICADO] PASO 3: Crear el contenido del archivo HTML final con el NUEVO DISEÑO ---
+    // --- PASO 4: Crear el contenido del archivo HTML final con el NUEVO DISEÑO ---
     const nombreInicialSanitizado = sanitizarParaId(nombreMomentoInicial);
     
     const css = `
-        /* [CSS MODIFICADO] Estilos para el nuevo layout de juego */
         html, body {
             margin: 0; padding: 0; height: 100%;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #1a1a1a;
-            color: #f0f0f0;
+            color: #ffffff;
+            overflow: hidden;
         }
         .game-container {
-            display: flex; flex-direction: column;
-            height: 100%; width: 100%;
+            position: relative; /* Contenedor principal para posicionar capas */
+            width: 100%;
+            height: 100%;
         }
-        .image-container {
-            flex: 0 0 73%;
-            overflow: hidden;
+        .background-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
             background-color: #000;
         }
-        #game-image {
+        #game-image-bg {
             width: 100%; height: 100%;
-            object-fit: cover;
+            object-fit: cover; /* El fondo cubre todo el espacio */
             object-position: center;
         }
-        .content-container {
-            flex: 1; display: flex; flex-direction: column;
-            padding: 25px; box-sizing: border-box;
-            overflow-y: auto;
+        /* --- NUEVO: Contenedor para las entidades superpuestas --- */
+        #game-entities-overlay {
+            position: absolute;
+            bottom: 0; /* Lo alineamos abajo */
+            left: 0;
+            width: 100%;
+            height: 95%; /* Ocupa la mitad inferior de la pantalla */
+            display: flex;
+            justify-content: center; /* Centra las entidades horizontalmente */
+            align-items: flex-end; /* Alinea las entidades en la base */
+            padding-bottom: 2%; /* Un pequeño margen inferior */
+            gap: 1vw; /* Espacio entre entidades */
+            pointer-events: none; /* Para que no interfiera con los botones */
+        }
+        .entity-sprite {
+           
+            object-fit: contain; /* Mantiene la proporción de la imagen */
+            -webkit-filter: drop-shadow(5px 5px 5px #222); /* Sombra para resaltar */
+            filter: drop-shadow(5px 5px 5px #222);
+        }
+ 
+
+        .content-container { 
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 5%;
+            width: 90%;
+            max-width: 1100px;
+            padding: 20px;
+            border-radius: 12px;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-sizing: border-box;
+            text-align: center;
         }
         #game-title {
-            margin: 0 0 15px 0; font-size: 1.8em; color: #ffffff;
-            flex-shrink: 0;
+            margin: 0 0 10px 0; font-size: 1.6em; display: none;
         }
-        #game-description {
-            margin: 0 0 20px 0; font-size: 1.1em; line-height: 1.6;
-            color: #cccccc; flex-grow: 1;
-        }
+     #game-description {
+    
+    margin: 0 0 15px 0; 
+    font-size: 1em; 
+    line-height: 1.5;
+}
         .actions-container {
-            display: flex; flex-direction: column;
-            gap: 12px; margin-top: auto;
-            flex-shrink: 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
         }
         .action-button {
-            width: 100%; padding: 15px; font-size: 1.1em; font-weight: bold;
-            color: #ffffff; background-color: #007bff;
-            border: none; border-radius: 8px; cursor: pointer;
-            text-align: center; text-decoration: none;
-            transition: background-color 0.2s;
+            padding: 10px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
         }
-        .action-button:hover { background-color: #0056b3; }
-        .error-container { text-align: center; color: #ffdddd; padding: 40px; }
+        .action-button:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
     `;
 
     const script = `
-        // [SCRIPT DEL JUEGO MODIFICADO] Lógica para renderizado dinámico con soporte para SVG y fallbacks
         const momentos = ${JSON.stringify(momentosData)};
+        const datosImagenes = ${JSON.stringify(Object.fromEntries(datosImagenMap))};
         const idInicio = "${nombreInicialSanitizado}";
 
         function mostrarMomento(sanitizedName) {
             const momento = momentos[sanitizedName];
-            const container = document.querySelector('.game-container');
-
             if (!momento) {
-                console.error('No se encontró el momento con el nombre:', sanitizedName);
-                container.innerHTML = '<div class="error-container"><h1>Error de Navegación</h1><p>El momento de destino <strong>(' + sanitizedName + ')</strong> no existe.</p></div>';
+                console.error('Error: No se encontró el momento', sanitizedName);
                 return;
             }
 
-            // --- Actualización de la lógica de la imagen ---
-            const gameImage = document.getElementById('game-image');
+            const bgImageEl = document.getElementById('game-image-bg');
+            const entitiesContainer = document.getElementById('game-entities-overlay');
 
-            // Priorizamos mostrar el SVG si existe para máxima calidad.
+            // 1. Cargar imagen de fondo
             if (momento.svg && momento.svg.trim() !== '') {
-                // Creamos un Data URL a partir del texto SVG crudo.
-                // Usamos unescape y encodeURIComponent para manejar correctamente caracteres especiales (UTF-8) antes de codificar a Base64.
                 const svgDataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(momento.svg)));
-                gameImage.src = svgDataUrl;
+                bgImageEl.src = svgDataUrl;
             } else {
-                // Si no hay SVG, usamos la imagen de fallback (útil para momentos no ilustrados o con PNGs antiguos).
-                gameImage.src = momento.imagenFallback || '';
+                bgImageEl.src = momento.imagenFallback || '';
             }
 
-            // --- El resto de la lógica permanece igual ---
+            // 2. Renderizar entidades (ESTA ES LA SECCIÓN ACTUALIZADA)
+            entitiesContainer.innerHTML = ''; // Limpiar entidades anteriores
+            if (momento.entidades && Array.isArray(momento.entidades)) {
+                momento.entidades.forEach(entidad => {
+                    const imgSrc = datosImagenes[entidad.recurso];
+                    if (imgSrc) {
+                        const imgEl = document.createElement('img');
+                        imgEl.src = imgSrc;
+                        imgEl.className = 'entity-sprite';
+                        
+                        // LÍNEA CLAVE: Aplicamos la altura guardada como estilo.
+                        // Usamos vh (altura de la ventana) para mantener la consistencia.
+                      imgEl.style.height = (entidad.altura || 65) + 'vh';
+
+                        entitiesContainer.appendChild(imgEl);
+                    }
+                });
+            }
+
+            // 3. Actualizar textos y botones
             document.getElementById('game-title').textContent = momento.titulo;
             document.getElementById('game-description').innerHTML = momento.descripcion.replace(/\\n/g, "<br>");
             
             const actionsContainer = document.getElementById('game-actions');
-            actionsContainer.innerHTML = ''; // Limpiar botones anteriores
+            actionsContainer.innerHTML = ''; 
 
             if (momento.acciones) {
                 momento.acciones.forEach(accion => {
@@ -184,9 +250,10 @@ momentosData[sanitizedTitulo] = {
 </head>
 <body>
     <div class="game-container">
-        <div class="image-container">
-            <img id="game-image" src="" alt="Escena del momento">
+        <div class="background-container">
+            <img id="game-image-bg" src="" alt="Fondo de la escena">
         </div>
+        <div id="game-entities-overlay"></div>
         <div class="content-container">
             <h1 id="game-title"></h1>
             <p id="game-description"></p>
@@ -198,25 +265,19 @@ momentosData[sanitizedTitulo] = {
 </body>
 </html>`;
 
-    // 4. Descargar el archivo (sin cambios)
+    // 5. Descargar el archivo
     const blob = new Blob([htmlCompleto], { type: 'text/html' });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `${tituloProyecto.replace(/\s+/g, '_')}_Juego.html`;
     a.click();
-    console.log("Exportación de Videojuego a HTML completada.");
+    console.log("Exportación de Videojuego con entidades completada.");
 }
 
-
-/**
- * Popula el menú desplegable para seleccionar el momento inicial en el modal de exportación.
- */
+// (El resto de funciones auxiliares no cambian)
 function poblarSelectorMomentoInicial() {
     const selectMomentoInicial = document.getElementById('momento-inicial-id');
-    if (!selectMomentoInicial) {
-        console.error("Error: No se encontró el elemento select 'momento-inicial-id'.");
-        return;
-    }
+    if (!selectMomentoInicial) return;
     const nodosMomento = document.querySelectorAll('#momentos-lienzo .momento-nodo');
     const valorSeleccionadoPreviamente = selectMomentoInicial.value;
     selectMomentoInicial.innerHTML = '';
@@ -242,9 +303,6 @@ function poblarSelectorMomentoInicial() {
     selectMomentoInicial.value = valorSeleccionadoPreviamente;
 }
 
-/**
- * Inicia la exportación del juego HTML.
- */
 function iniciarExportacionJuego() {
     const momentoInicialSelect = document.getElementById('momento-inicial-id');
     const nombreMomentoInicial = momentoInicialSelect.value;

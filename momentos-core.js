@@ -315,7 +315,8 @@ function crearMomentoEnLienzoDesdeDatos(datos) {
     
     // Estos se mantienen por compatibilidad.
     nuevoNodo.dataset.entorno = '{}';
-    nuevoNodo.dataset.entidades = '[]';
+   nuevoNodo.dataset.entidades = datos.entidades ? JSON.stringify(datos.entidades) : '[]';
+
     
     const imgElement = nuevoNodo.querySelector('.momento-imagen');
 

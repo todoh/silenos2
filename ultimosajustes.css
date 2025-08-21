@@ -62,7 +62,7 @@
         }
 
 
-  /* --- ESTILOS PARA EL MENÚ DESPLEGABLE DEL ASISTENTE --- */
+ 
   /* --- ESTILOS PARA EL MENÚ DESPLEGABLE DEL ASISTENTE --- */
     #asistente-popup {
         position: absolute;
@@ -99,7 +99,105 @@ height: 30px;
     #asistente-popup.visible #asistente-titulo-input {
   
     }
-   
+  /* === ESTILOS PARA EL MODAL DE SELECCIÓN DE ENTIDAD === */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+ 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.modal-content {
+ 
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 900px;
+    height: 80vh;
+     
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #555;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #eee;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 28px;
+    cursor: pointer;
+}
+
+.modal-body-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+    overflow-y: auto;
+    flex-grow: 1;
+    padding: 5px;
+}
+
+.grid-item-entidad {
+    background-color: #444;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-align: center;
+    overflow: hidden;
+}
+
+.grid-item-entidad:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(0, 191, 255, 0.6);
+}
+
+.grid-item-entidad img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    display: block;
+}
+
+.grid-item-entidad span {
+    display: block;
+    padding: 8px;
+    font-size: 13px;
+    color: #ddd;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* Estilos para la fila de entidad simplificada en el panel */
+.entidad-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.entidad-nombre {
+    flex-grow: 1;
+ 
+}
+.entidad-controles button {
+    margin-left: 5px;
+} 
     #asistente-menu {
         position: fixed;
         top: 50%; 
@@ -154,3 +252,91 @@ background-image: linear-gradient(120deg, rgba(192, 192, 192, 0.3),  rgba(255, 2
         flex-grow: 1;
         width: auto;
     }
+
+
+    /* ================================================================= */
+/* === ESTILOS DEFINITIVOS PARA EL MODAL DE SELECCIÓN DE ENTIDAD === */
+/* ================================================================= */
+
+/* Usamos el ID para máxima especificidad y evitar conflictos */
+#modal-seleccion-entidad {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-color: rgba(0, 0, 0, 0.75) !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 10000 !important;
+}
+
+#modal-seleccion-entidad .modal-content {
+    background-color: #2c2c2c !important;
+    color: #f0f0f0 !important;
+    padding: 20px !important;
+    border-radius: 8px !important;
+    border: 1px solid #555 !important;
+    width: 80% !important;
+    max-width: 900px !important;
+    height: 80vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.5) !important;
+}
+
+#modal-seleccion-entidad .modal-header {
+    flex-shrink: 0 !important; /* Evita que el header se encoja */
+    border-bottom: 1px solid #555 !important;
+    padding-bottom: 10px !important;
+    margin-bottom: 15px !important;
+}
+
+/* Contenedor de la cuadrícula: forzamos el grid y el scroll */
+#modal-seleccion-entidad .modal-body-grid {
+    display: grid !important; /* FORZAMOS LA VISUALIZACIÓN EN CUADRÍCULA */
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
+    gap: 15px !important;
+    overflow-y: auto !important; /* FORZAMOS LA BARRA DE SCROLL VERTICAL */
+    flex-grow: 1 !important;
+    padding: 10px !important;
+    background-color: rgba(0,0,0,0.2) !important;
+    border-radius: 5px !important;
+}
+
+/* Elementos individuales de la cuadrícula */
+#modal-seleccion-entidad .grid-item-entidad {
+    background-color: #444 !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    text-align: center !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 140px; /* Damos una altura fija para consistencia */
+}
+
+#modal-seleccion-entidad .grid-item-entidad:hover {
+    transform: scale(1.05) !important;
+    box-shadow: 0 0 15px rgba(0, 191, 255, 0.6) !important;
+}
+
+#modal-seleccion-entidad .grid-item-entidad img {
+    width: 100% !important;
+    height: 100px !important; /* Altura fija para la imagen */
+    object-fit: cover !important;
+    display: block !important;
+}
+
+#modal-seleccion-entidad .grid-item-entidad span {
+    display: block !important;
+    padding: 8px !important;
+    font-size: 13px !important;
+   
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  
+    flex-grow: 1 !important; /* Ocupa el espacio restante */
+}

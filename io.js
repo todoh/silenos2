@@ -3,7 +3,7 @@
 // ===================================
 
 const PROJECT_FILENAME = 'silenos_project.json';
-let projectFileId = null; // To store the Google Drive file ID
+let projectFileId = null; // Almacena el ID del archivo de Google Drive.
 
 // La función _compressImageForSave no cambia.
 let _compressImageForSave = (imagenSrc) => {
@@ -137,8 +137,10 @@ async function empaquetarDatosDelProyecto() {
             x: parseInt(nodo.style.left, 10),
             y: parseInt(nodo.style.top, 10),
             imagen: imagenComprimida,
-            svgIlustracion: svgIlustracion, 
-            acciones: JSON.parse(nodo.dataset.acciones || '[]')
+            svgIlustracion: svgIlustracion,
+            acciones: JSON.parse(nodo.dataset.acciones || '[]'),
+            entidades: JSON.parse(nodo.dataset.entidades || '[]')
+
         };
     });
 
@@ -160,7 +162,7 @@ async function empaquetarDatosDelProyecto() {
     const processedStoryScenes = await promesasEscenasStory;
     const processedMomentos = await Promise.all(promesasMomentos);
     const processedGeneraciones = (await Promise.all(promesasGeneraciones)).filter(Boolean);
-    
+
     // --- INICIO: INTEGRACIÓN DE PLANOS DEL PROGRAMADOR ---
     const programadorBlueprintsJSON = localStorage.getItem('visualAutomationBlueprints');
     const programadorBlueprints = programadorBlueprintsJSON ? JSON.parse(programadorBlueprintsJSON) : [];
@@ -185,8 +187,14 @@ async function empaquetarDatosDelProyecto() {
     };
 }
 
+
+// =======================================================================
+// === INICIO: SECCIÓN DE GOOGLE DRIVE ACTUALIZADA ===
+// =======================================================================
+
 /**
  * Busca en Google Drive un archivo de proyecto creado por esta aplicación.
+ * Esta función no se modifica, es correcta.
  * @returns {string|null} El ID del archivo si se encuentra, o null.
  */
 async function buscarArchivoEnDrive() {
@@ -217,29 +225,45 @@ async function buscarArchivoEnDrive() {
 }
 
 /**
- * Guarda el estado actual del proyecto en Google Drive.
- * Crea un nuevo archivo si no existe, o actualiza el existente.
+ * Función pública que inicia el proceso de guardado.
+ * Llama a 'ensureDriveAuth' para asegurarse de que tenemos permiso antes de continuar.
  */
-async function guardarProyectoEnDrive() {
-    if (!gapi_access_token) {
-        alert("Debes iniciar sesión para guardar tu proyecto.");
-        return;
-    }
+function guardarProyectoEnDrive() {
+    // 'ensureDriveAuth' viene de tu nuevo archivo 'auth-drive.js'
+    // Se le pasa como argumento la función que debe ejecutar una vez obtenida la autorización.
+    ensureDriveAuth(_internal_guardarProyectoEnDrive);
+}
 
+/**
+ * Lógica interna para guardar el proyecto. Solo se ejecuta después de obtener autorización.
+ * @private
+ */
+async function _internal_guardarProyectoEnDrive() {
     if (typeof progressBarManager !== 'undefined') {
         progressBarManager.start('Guardando en Drive...');
+    }
+
+    await buscarArchivoEnDrive();
+
+    // Si el archivo ya existe, pedimos confirmación para sobrescribir.
+    if (projectFileId) {
+        if (!confirm("Ya existe un proyecto en Drive. ¿Deseas sobrescribirlo?")) {
+            console.log("Guardado cancelado por el usuario.");
+            if (typeof progressBarManager !== 'undefined') {
+                progressBarManager.finish("Guardado cancelado");
+            }
+            return;
+        }
     }
 
     const projectData = await empaquetarDatosDelProyecto();
     const projectDataBlob = new Blob([JSON.stringify(projectData, null, 2)], {
         type: 'application/json'
     });
-
     const metadata = {
         'name': PROJECT_FILENAME,
-        'mimeType': 'application/json',
+        'mimeType': 'application/json'
     };
-
     const formData = new FormData();
     formData.append('metadata', new Blob([JSON.stringify(metadata)], {
         type: 'application/json'
@@ -263,42 +287,39 @@ async function guardarProyectoEnDrive() {
             body: formData
         });
 
-        if (!response.ok) {
-            throw new Error(`Error al guardar en Drive: ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`Error al guardar en Drive: ${response.statusText}`);
 
         const data = await response.json();
         projectFileId = data.id;
         console.log("Proyecto guardado con éxito. ID del archivo:", projectFileId);
-
-        if (typeof progressBarManager !== 'undefined') {
-            progressBarManager.finish();
-        }
-
+        if (typeof progressBarManager !== 'undefined') progressBarManager.finish("¡Guardado!");
     } catch (error) {
         console.error(error);
-        if (typeof progressBarManager !== 'undefined') {
-            progressBarManager.error('Fallo al guardar');
-        }
+        if (typeof progressBarManager !== 'undefined') progressBarManager.error('Fallo al guardar');
     }
 }
 
 /**
- * Carga los datos del proyecto desde Google Drive. Si no existe, crea un nuevo
- * proyecto en la nube automáticamente.
+ * Función pública que inicia el proceso de carga desde Drive.
  */
-async function cargarProyectoDesdeDrive() {
+function cargarProyectoDesdeDrive() {
+    ensureDriveAuth(_internal_cargarProyectoDesdeDrive);
+}
+
+/**
+ * Lógica interna para cargar el proyecto. Se ejecuta tras obtener autorización.
+ * Si no encuentra un archivo, crea un proyecto vacío en Drive.
+ * @private
+ */
+async function _internal_cargarProyectoDesdeDrive() {
     await buscarArchivoEnDrive();
 
-    if (!projectFileId || !gapi_access_token) {
+    if (!projectFileId) {
         console.log("No se encontró archivo en Drive. Creando un nuevo proyecto de Silenos en la nube...");
-        if (typeof reiniciarEstadoApp === 'function') {
-            reiniciarEstadoApp();
-        }
-        if (typeof guardarProyectoEnDrive === 'function') {
-            await guardarProyectoEnDrive();
-            console.log("Nuevo proyecto de Silenos guardado en Google Drive.");
-        }
+        alert("No se encontró un proyecto guardado. Se creará uno nuevo en tu Google Drive.");
+        if (typeof reiniciarEstadoApp === 'function') reiniciarEstadoApp();
+        // Llamamos a la función interna de guardado para crear el archivo base.
+        await _internal_guardarProyectoEnDrive();
         return;
     }
 
@@ -310,15 +331,12 @@ async function cargarProyectoDesdeDrive() {
             }
         });
 
-        if (!response.ok) {
-            throw new Error(`No se pudo leer el archivo de Drive: ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`No se pudo leer el archivo de Drive: ${response.statusText}`);
 
         const data = await response.json();
         if (typeof cargarDatosEnLaApp === 'function') {
             cargarDatosEnLaApp(data);
         }
-
     } catch (error) {
         console.error(error);
         alert("No se pudo cargar tu proyecto desde Google Drive. Se iniciará un proyecto nuevo como medida de seguridad.");
@@ -327,6 +345,10 @@ async function cargarProyectoDesdeDrive() {
         }
     }
 }
+
+// =======================================================================
+// === FIN: SECCIÓN DE GOOGLE DRIVE ACTUALIZADA ===
+// =======================================================================
 
 
 /**
@@ -424,7 +446,7 @@ function cargarDatosEnLaApp(data) {
     if (generaciones && Array.isArray(generaciones) && generaciones.length > 0) {
         // Lógica para reconstruir la galería del compositor...
     }
-    
+
     if (data.animacionesSvg && Array.isArray(data.animacionesSvg)) {
         console.log(`[IO] Cargando ${data.animacionesSvg.length} animaciones SVG.`);
         if (typeof window.escenasSvg !== 'undefined') {
@@ -436,7 +458,7 @@ function cargarDatosEnLaApp(data) {
             }
         }
     }
-    
+
     // --- INICIO: RESTAURACIÓN DE PLANOS DEL PROGRAMADOR ---
     if (data.programadorBlueprints && Array.isArray(data.programadorBlueprints)) {
         console.log(`[IO] Cargando ${data.programadorBlueprints.length} planos del programador desde el archivo.`);
@@ -456,7 +478,7 @@ function cargarDatosEnLaApp(data) {
 
 }
 
- 
+
  async function guardarJSON() {
     console.log("Guardando el proyecto en formato JSON local...");
     try {
@@ -481,7 +503,7 @@ function cargarDatosEnLaApp(data) {
         alert("Hubo un error al guardar el proyecto localmente.");
     }
 }
- 
+
 function cargarJSON(event) {
     let file = event.target.files[0];
     if (!file) return;
@@ -496,7 +518,7 @@ function cargarJSON(event) {
             console.error("Error al parsear JSON:", error);
             return;
         }
-        
+
         // Se llama a tu función principal de carga, que se mantiene intacta.
         cargarDatosEnLaApp(data);
 
@@ -549,6 +571,4 @@ function migrarEscenasSinLibro() {
     });
 
     alert(`Se han encontrado ${escenasHuerfanasIds.length} capítulos de una versión anterior. Se han movido a un nuevo libro llamado "${nombreLibroAntiguo}" para que puedas seguir accediendo a ellos.`);
-
-    // guardarCambios(); // Comentado: No está claro si esta función existe o es necesaria. La migración se guardará la próxima vez que el usuario guarde el proyecto manualmente.
 }
