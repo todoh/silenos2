@@ -128,7 +128,11 @@ async function empaquetarDatosDelProyecto() {
     const nodosMomento = document.querySelectorAll('#momentos-lienzo .momento-nodo');
     const promesasMomentos = Array.from(nodosMomento).map(async (nodo) => {
         const imagenComprimida = await _compressImageForSave(nodo.querySelector('.momento-imagen').src);
-                const svgIlustracion = nodo.dataset.svgIlustracion || '';
+        const svgIlustracion = nodo.dataset.svgIlustracion || '';
+
+        // Se añaden estas dos líneas para leer los dataset de las llaves
+        const llavesActivar = nodo.dataset.llavesActivar || '';
+        const llavesDesactivar = nodo.dataset.llavesDesactivar || '';
 
         return {
             id: nodo.id,
@@ -139,11 +143,17 @@ async function empaquetarDatosDelProyecto() {
             imagen: imagenComprimida,
             svgIlustracion: svgIlustracion,
             acciones: JSON.parse(nodo.dataset.acciones || '[]'),
-            entidades: JSON.parse(nodo.dataset.entidades || '[]')
-
+            entidades: JSON.parse(nodo.dataset.entidades || '[]'),
+            // Y se añaden aquí al objeto que se va a guardar
+            llavesActivar: llavesActivar,
+            llavesDesactivar: llavesDesactivar
         };
     });
 
+
+
+
+    
     const generacionesItems = document.querySelectorAll('#generaciones-container .generacion-item');
     const promesasGeneraciones = Array.from(generacionesItems).map(async (item) => {
         const img = item.querySelector('img');

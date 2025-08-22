@@ -547,10 +547,6 @@ function agregarPersonaje() {
     reinicializarFiltrosYActualizarVista();
 }
 
-// =========================================================================
-// INICIALIZACIÓN Y MANEJO DE INTERACCIÓN PRINCIPAL
-// =========================================================================
-
 // EN: datos.js
 // REEMPLAZA la función inicializarInteraccionPersonajes() completa por esta versión final.
 
@@ -560,6 +556,7 @@ function inicializarInteraccionPersonajes() {
 
     // Listener para ABRIR el editor
     listaPersonajesEl.addEventListener('click', (e) => {
+        // ... (lógica para ignorar clics en botones de etiqueta se mantiene)
         if (e.target.closest('.change-tag-btn') || e.target.closest('.change-arc-btn')) {
             return;
         }
@@ -568,7 +565,8 @@ function inicializarInteraccionPersonajes() {
         if (visualClicked) {
             const personajeActual = visualClicked.closest('.personaje');
             if (!personajeActual) return;
-
+            
+            // ... (lógica para cerrar otros editores se mantiene)
             const otroPersonajeActivo = document.querySelector('.personaje.editing');
             if (otroPersonajeActivo && otroPersonajeActivo !== personajeActual) {
                 otroPersonajeActivo.classList.remove('editing');
@@ -581,13 +579,18 @@ function inicializarInteraccionPersonajes() {
             const yaEstabaEditando = personajeActual.classList.contains('editing');
             personajeActual.classList.toggle('editing');
 
+            // --- [INICIO DE LA MODIFICACIÓN CLAVE] ---
             if (!yaEstabaEditando) {
                 // El editor se acaba de abrir
-                const visualImgSrc = visualClicked.querySelector('img')?.src;
                 const overlay = personajeActual.querySelector('.personaje-edit-overlay');
+                
+                // Obtenemos referencias a TODOS los posibles contenedores de previsualización.
                 const previewImg = overlay.querySelector('.edit-preview-image');
+                const svgPreviewContainer = overlay.querySelector('.edit-svg-preview'); // Nuestro nuevo contenedor
                 const canvas3D = overlay.querySelector('.edit-3d-canvas');
+                
                 const promptVisualText = personajeActual.querySelector('.prompt-visualh')?.value || '';
+                const svgCode = personajeActual.dataset.svgContent;
 
                 let modelData = null;
                 try {
@@ -596,17 +599,17 @@ function inicializarInteraccionPersonajes() {
                         modelData = parsed;
                     }
                 } catch (err) { /* No es un JSON 3D */ }
+                
+                // Ocultamos todo primero para empezar de cero
+                if(previewImg) previewImg.style.display = 'none';
+                if(svgPreviewContainer) svgPreviewContainer.style.display = 'none';
+                if(canvas3D) canvas3D.style.display = 'none';
 
                 if (modelData && canvas3D) {
-                    if(previewImg) previewImg.style.display = 'none';
+                    // Lógica para 3D (sin cambios)
                     canvas3D.style.display = 'block';
-
-                    // --- INICIO DE LA CORRECCIÓN DEFINITIVA ---
-                    // Retrasamos la creación del visor un solo frame.
-                    // Esto le da tiempo al navegador para que el canvas sea visible y tenga dimensiones > 0.
                     requestAnimationFrame(() => {
                         if (typeof Mini3DViewer !== 'undefined') {
-                            // Nos aseguramos de que el visor no se cree dos veces si el usuario hace clics muy rápido
                             if (!personajeActual.miniViewer) {
                                 personajeActual.miniViewer = new Mini3DViewer(canvas3D, modelData);
                             }
@@ -614,35 +617,50 @@ function inicializarInteraccionPersonajes() {
                             console.error("La clase Mini3DViewer no está definida.");
                         }
                     });
-                    // --- FIN DE LA CORRECCIÓN DEFINITIVA ---
 
-                } else {
-                    if(canvas3D) canvas3D.style.display = 'none';
-                    if (previewImg && visualImgSrc && !visualImgSrc.endsWith('/')) {
+                } else if (svgCode && svgPreviewContainer) {
+                    // [NUEVA LÓGICA] Si hay un SVG, lo renderizamos directamente.
+                    svgPreviewContainer.innerHTML = svgCode; // Inyectamos el código SVG
+                    svgPreviewContainer.style.display = 'block'; // Lo hacemos visible
+
+                } else if (previewImg) {
+                    // [LÓGICA DE FALLBACK] Si no es 3D ni SVG, mostramos la imagen normal (PNG/JPG).
+                    const visualImgSrc = visualClicked.querySelector('img')?.src;
+                    if (visualImgSrc && !visualImgSrc.endsWith('/')) {
                         previewImg.src = visualImgSrc;
                         previewImg.style.display = 'block';
-                    } else if (previewImg) {
-                        previewImg.style.display = 'none';
                     }
                 }
+
             } else {
-                // El editor se acaba de cerrar (haciendo clic en el mismo)
+                // El editor se acaba de cerrar
                 if (personajeActual.miniViewer) {
                     personajeActual.miniViewer.cleanup();
                     personajeActual.miniViewer = null;
                 }
+                // [NUEVO] Limpiamos el contenedor SVG para liberar memoria
+                const svgPreviewContainer = personajeActual.querySelector('.edit-svg-preview');
+                if (svgPreviewContainer) {
+                    svgPreviewContainer.innerHTML = '';
+                }
             }
+            // --- [FIN DE LA MODIFICACIÓN CLAVE] ---
         }
     });
 
-    // Listener global para CERRAR CUALQUIER editor abierto
+    // Listener global para CERRAR CUALQUIER editor abierto (sin cambios)
     document.addEventListener('click', (e) => {
         const personajeActivo = document.querySelector('.personaje.editing');
         if (personajeActivo && !e.target.closest('.personaje.editing') && !e.target.closest('.menu-etiquetas')) {
             personajeActivo.classList.remove('editing');
+            // Limpieza al cerrar
             if (personajeActivo.miniViewer) {
                 personajeActivo.miniViewer.cleanup();
                 personajeActivo.miniViewer = null;
+            }
+            const svgPreviewContainer = personajeActivo.querySelector('.edit-svg-preview');
+            if (svgPreviewContainer) {
+                svgPreviewContainer.innerHTML = '';
             }
         }
     }, true);
@@ -762,6 +780,11 @@ function agregarPersonajeDesdeDatos(personajeData = {}) {
     const previewImage = document.createElement('img');
     previewImage.className = 'edit-preview-image';
     previewContainer.appendChild(previewImage);
+    
+ const svgPreviewContainer = document.createElement('div');
+    svgPreviewContainer.className = 'edit-svg-preview';
+    svgPreviewContainer.style.display = 'none'; // Oculto por defecto
+    previewContainer.appendChild(svgPreviewContainer);
 
 const editorCanvas3D = document.createElement('canvas');
     editorCanvas3D.className = 'edit-3d-canvas';

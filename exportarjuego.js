@@ -1,5 +1,8 @@
+ 
+
+
 /**
- * Genera un archivo HTML interactivo a partir de los momentos del lienzo, superponiendo las entidades.
+ * [MODIFICADO] - Genera el juego, priorizando el uso de SVG para las entidades.
  * @param {string} nombreMomentoInicial - El NOMBRE del primer momento que se mostrará.
  */
 async function generarGAME(nombreMomentoInicial) {
@@ -16,7 +19,7 @@ async function generarGAME(nombreMomentoInicial) {
 
     const nodosMomento = document.querySelectorAll('#momentos-lienzo .momento-nodo');
     
-    // --- PASO 1: Validar nombres y crear mapas de IDs ---
+    // Validación de nombres duplicados (sin cambios)
     const idToSanitizedNameMap = new Map();
     const sanitizedNameCheck = new Map();
     let hasDuplicates = false;
@@ -46,7 +49,7 @@ async function generarGAME(nombreMomentoInicial) {
         return;
     }
     
-    // --- PASO 2: Crear un mapa con las imágenes de todos los datos ---
+    // Mapa de imágenes de previsualización (usado como fallback)
     const datosImagenMap = new Map();
     document.querySelectorAll('#listapersonajes .personaje').forEach(datoEl => {
         const nombre = datoEl.querySelector('.nombreh')?.value.trim();
@@ -56,20 +59,26 @@ async function generarGAME(nombreMomentoInicial) {
         }
     });
 
-    // --- PASO 3: Recopilar todos los datos de los momentos en un objeto JSON ---
-    const momentosData = {};
+    // Recopilación de datos de momentos (ahora incluye el SVG en las entidades)
+     const momentosData = {};
     for (const nodo of nodosMomento) {
         const titulo = nodo.querySelector('.momento-titulo').textContent;
         const sanitizedTitulo = idToSanitizedNameMap.get(nodo.id);
         
+        // Las acciones ya contienen toda la info nueva gracias a JSON.parse
         const accionesOriginales = JSON.parse(nodo.dataset.acciones || '[]');
         const accionesMapeadas = accionesOriginales.map(accion => ({
             ...accion,
             idDestino: idToSanitizedNameMap.get(accion.idDestino) || ''
         })).filter(accion => accion.idDestino);
         
-        // --- CAMBIO CLAVE: Incluimos las entidades ---
         const entidades = JSON.parse(nodo.dataset.entidades || '[]');
+        
+        // [NUEVO] Parseamos las listas de llaves a arrays limpios
+        const llavesActivar = (nodo.dataset.llavesActivar || '').split(',')
+                                .map(k => k.trim()).filter(Boolean);
+        const llavesDesactivar = (nodo.dataset.llavesDesactivar || '').split(',')
+                                .map(k => k.trim()).filter(Boolean);
 
         momentosData[sanitizedTitulo] = {
             titulo: titulo,
@@ -77,13 +86,14 @@ async function generarGAME(nombreMomentoInicial) {
             svg: nodo.dataset.svgIlustracion || '', 
             imagenFallback: nodo.querySelector('.momento-imagen').src,
             acciones: accionesMapeadas,
-            entidades: entidades // Añadimos el array de entidades
+            entidades: entidades,
+            llavesActivar: llavesActivar,       // <-- Nuevo
+            llavesDesactivar: llavesDesactivar  // <-- Nuevo
         };
     }
 
-    // --- PASO 4: Crear el contenido del archivo HTML final con el NUEVO DISEÑO ---
+    // Creación del HTML y CSS (sin cambios)
     const nombreInicialSanitizado = sanitizarParaId(nombreMomentoInicial);
-    
     const css = `
         html, body {
             margin: 0; padding: 0; height: 100%;
@@ -103,11 +113,11 @@ async function generarGAME(nombreMomentoInicial) {
             background-color: #000;
         }
        #game-image-bg {
-    width: 100%; /* La imagen debe ocupar el 100% del ancho de su contenedor */
-    height: 100%; /* Y el 100% del alto */
-    object-fit: cover !important; /* Mantiene la proporción y cubre todo el espacio, recortando lo que sobre */
-    object-position: center bottom; /* Se asegura de que la imagen permanezca centrada */
-}
+            width: 100%; /* La imagen debe ocupar el 100% del ancho de su contenedor */
+            height: 100%; /* Y el 100% del alto */
+            object-fit: cover !important; /* Mantiene la proporción y cubre todo el espacio, recortando lo que sobre */
+            object-position: center bottom; /* Se asegura de que la imagen permanezca centrada */
+        }
         /* --- NUEVO: Contenedor para las entidades superpuestas --- */
         #game-entities-overlay {
             position: absolute;
@@ -176,70 +186,151 @@ async function generarGAME(nombreMomentoInicial) {
             background-color: rgba(255, 255, 255, 0.3);
         }
     `;
+    
+    // -- CAMBIO CLAVE --
+    // El script del juego ahora sabe cómo manejar el SVG de una entidad.
+// Dentro de la función generarGAME, localiza la variable 'script' y reemplaza la función mostrarMomento.
 
-    const script = `
-        const momentos = ${JSON.stringify(momentosData)};
-        const datosImagenes = ${JSON.stringify(Object.fromEntries(datosImagenMap))};
-        const idInicio = "${nombreInicialSanitizado}";
+const script = `
+    const momentos = ${JSON.stringify(momentosData)};
+    const datosImagenes = ${JSON.stringify(Object.fromEntries(datosImagenMap))};
+    const idInicio = "${nombreInicialSanitizado}";
 
-        function mostrarMomento(sanitizedName) {
-            const momento = momentos[sanitizedName];
-            if (!momento) {
-                console.error('Error: No se encontró el momento', sanitizedName);
-                return;
-            }
+    // [NUEVO] Estado global para las llaves y acciones usadas
+    let estadoLlaves = {};
+    const accionesUsadas = new Set();
 
-            const bgImageEl = document.getElementById('game-image-bg');
-            const entitiesContainer = document.getElementById('game-entities-overlay');
+    /**
+     * [MODIFICADO] - La función clave del juego, ahora con lógica condicional.
+     */
+    function mostrarMomento(sanitizedName) {
+        const momento = momentos[sanitizedName];
+        if (!momento) {
+            console.error('Error: No se encontró el momento', sanitizedName);
+            return;
+        }
 
-            // 1. Cargar imagen de fondo
-            if (momento.svg && momento.svg.trim() !== '') {
-                const svgDataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(momento.svg)));
-                bgImageEl.src = svgDataUrl;
-            } else {
-                bgImageEl.src = momento.imagenFallback || '';
-            }
+        // --- 1. ACTUALIZAR ESTADO DE LLAVES (se hace al entrar al momento) ---
+        if (momento.llavesActivar && momento.llavesActivar.length > 0) {
+            momento.llavesActivar.forEach(llave => {
+                estadoLlaves[llave] = true;
+                console.log('Llave ACTIVADA:', llave);
+            });
+        }
+        if (momento.llavesDesactivar && momento.llavesDesactivar.length > 0) {
+            momento.llavesDesactivar.forEach(llave => {
+                estadoLlaves[llave] = false;
+                console.log('Llave DESACTIVADA:', llave);
+            });
+        }
+        
+        // Cargar fondo y entidades (sin cambios)
+        const bgImageEl = document.getElementById('game-image-bg');
+        if (momento.svg && momento.svg.trim() !== '') {
+            bgImageEl.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(momento.svg)));
+        } else {
+            bgImageEl.src = momento.imagenFallback || '';
+        }
+        const entitiesContainer = document.getElementById('game-entities-overlay');
+        entitiesContainer.innerHTML = '';
+        if (momento.entidades && Array.isArray(momento.entidades)) {
+            momento.entidades.forEach(entidad => { /* ...lógica de entidades sin cambios... */ });
+        }
+        // --- LÓGICA DE RENDERIZADO DE ENTIDADES MODIFICADA ---
+        entitiesContainer.innerHTML = '';
+        if (momento.entidades && Array.isArray(momento.entidades)) {
+            momento.entidades.forEach(entidad => {
+                const entidadContainer = document.createElement('div');
+                entidadContainer.className = 'entity-sprite';
+                
+                // [NUEVO] Aplicar TAMAÑO y ALTURA (POSICIÓN Y)
+                // 1. El tamaño controla la altura de la entidad en 'vh' (porcentaje de la altura de la ventana).
+                entidadContainer.style.height = (entidad.tamaño || 45) + 'vh';
+                
+                // 2. La altura controla la separación desde la base (posición Y).
+                //    Usamos margin-bottom para "elevar" la entidad desde su posición base.
+                //    Multiplico por un factor para que el valor del input no sea tan extremo. Puedes ajustar 0.3 si quieres más o menos sensibilidad.
+                entidadContainer.style.marginBottom = ((entidad.altura || 0) * 0.3) + 'vh';
 
-            // 2. Renderizar entidades (ESTA ES LA SECCIÓN ACTUALIZADA)
-            entitiesContainer.innerHTML = ''; // Limpiar entidades anteriores
-            if (momento.entidades && Array.isArray(momento.entidades)) {
-                momento.entidades.forEach(entidad => {
-                    const imgSrc = datosImagenes[entidad.recurso];
-                    if (imgSrc) {
-                        const imgEl = document.createElement('img');
-                        imgEl.src = imgSrc;
-                        imgEl.className = 'entity-sprite';
-                        
-                        // LÍNEA CLAVE: Aplicamos la altura guardada como estilo.
-                        // Usamos vh (altura de la ventana) para mantener la consistencia.
-                      imgEl.style.height = (entidad.altura || 65) + 'vh';
-
-                        entitiesContainer.appendChild(imgEl);
+                
+                if (entidad.svg && entidad.svg.trim() !== '') {
+                    // Si hay SVG, lo inyectamos directamente
+                    entidadContainer.innerHTML = entidad.svg;
+                } else {
+                    // Si no, usamos el <img> como fallback
+                    const fallbackImg = document.createElement('img');
+                    const fallbackSrc = datosImagenes[entidad.recurso];
+                    if (fallbackSrc) {
+                        fallbackImg.src = fallbackSrc;
+                        fallbackImg.style.width = '100%';
+                        fallbackImg.style.height = '100%';
+                        entidadContainer.appendChild(fallbackImg);
                     }
-                });
-            }
+                }
+                entitiesContainer.appendChild(entidadContainer);
+            });
+        }
+        // Actualizar textos (sin cambios)
+        document.getElementById('game-title').textContent = momento.titulo;
+        document.getElementById('game-description').innerHTML = momento.descripcion.replace(/\\n/g, "<br>");
+        
+        // --- 2. RENDERIZAR ACCIONES CON LÓGICA CONDICIONAL ---
+        const actionsContainer = document.getElementById('game-actions');
+        actionsContainer.innerHTML = ''; 
 
-            // 3. Actualizar textos y botones
-            document.getElementById('game-title').textContent = momento.titulo;
-            document.getElementById('game-description').innerHTML = momento.descripcion.replace(/\\n/g, "<br>");
-            
-            const actionsContainer = document.getElementById('game-actions');
-            actionsContainer.innerHTML = ''; 
+        if (momento.acciones) {
+            momento.acciones.forEach(accion => {
+                let esVisible = false;
+                const condicionTipo = accion.condicionTipo || 'siempre_visible';
+                const condicionLlave = accion.condicionLlave;
 
-            if (momento.acciones) {
-                momento.acciones.forEach(accion => {
+                switch (condicionTipo) {
+                    case 'una_vez':
+                        const accionId = sanitizedName + '|' + accion.textoBoton;
+                        if (!accionesUsadas.has(accionId)) {
+                            esVisible = true;
+                        }
+                        break;
+                    case 'visible_si':
+                        if (estadoLlaves[condicionLlave]) {
+                            esVisible = true;
+                        }
+                        break;
+                    case 'invisible_si':
+                        if (!estadoLlaves[condicionLlave]) {
+                            esVisible = true;
+                        }
+                        break;
+                    case 'siempre_visible':
+                    default:
+                        esVisible = true;
+                        break;
+                }
+
+                if (esVisible) {
                     const button = document.createElement('button');
                     button.className = 'action-button';
                     button.textContent = accion.textoBoton;
-                    button.onclick = () => mostrarMomento(accion.idDestino);
+                    
+                    button.onclick = () => {
+                        // Si es una acción de un solo uso, la marcamos como usada.
+                        if (condicionTipo === 'una_vez') {
+                            const accionId = sanitizedName + '|' + accion.textoBoton;
+                            accionesUsadas.add(accionId);
+                        }
+                        mostrarMomento(accion.idDestino);
+                    };
                     actionsContainer.appendChild(button);
-                });
-            }
+                }
+            });
         }
-        
-        window.onload = () => mostrarMomento(idInicio);
-    `;
+    }
+    
+    window.onload = () => mostrarMomento(idInicio);
+`;
+// El resto de la función generarGAME sigue igual...
 
+    // Creación del HTML final y descarga (sin cambios)
     const htmlCompleto = `
 <!DOCTYPE html>
 <html lang="es">
@@ -266,14 +357,31 @@ async function generarGAME(nombreMomentoInicial) {
 </body>
 </html>`;
 
-    // 5. Descargar el archivo
     const blob = new Blob([htmlCompleto], { type: 'text/html' });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `${tituloProyecto.replace(/\s+/g, '_')}_Juego.html`;
     a.click();
-    console.log("Exportación de Videojuego con entidades completada.");
+    console.log("Exportación de Videojuego con entidades (SVG-priorizado) completada.");
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // (El resto de funciones auxiliares no cambian)
 function poblarSelectorMomentoInicial() {

@@ -15,7 +15,8 @@
     border-radius: 12px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     z-index: 1002; /* Por encima de los controles flotantes de momentos */
-    
+    overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     
@@ -25,6 +26,54 @@
     visibility: hidden;
     transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
 }
+/* Estilo para el contenedor del SVG en el editor */
+.edit-svg-preview {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Estilo para el SVG que se inyecta dentro del contenedor */
+.edit-svg-preview svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Asegura que el SVG se escale correctamente sin deformarse */
+}
+/* EN: editor-momento.css (Añadir al final del archivo) */
+
+.panel-campo-doble {
+    display: flex;
+    gap: 15px;
+}
+.panel-campo-doble .panel-campo {
+    flex: 1;
+}
+
+.accion-item {
+    display: flex;
+    flex-direction: column; /* Apila las filas verticalmente */
+    gap: 8px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 6px;
+}
+.dark-theme .accion-item {
+     background-color: #3a4049;
+}
+
+.accion-fila {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.accion-texto-input { flex: 2; } /* Más espacio para el texto del botón */
+.accion-destino-select { flex: 2; }
+.accion-condicion-tipo { flex: 1; }
+.accion-condicion-llave { flex: 1; }
 
 #panel-edicion-momento.visible {
     opacity: 1;

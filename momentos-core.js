@@ -113,6 +113,8 @@ function crearNodoEnLienzo(datos) {
     nuevoNodo.dataset.entorno = datos.entorno ? JSON.stringify(datos.entorno) : '{}';
     nuevoNodo.dataset.entidades = datos.entidades ? JSON.stringify(datos.entidades) : '[]';
 
+
+
     lienzo.appendChild(nuevoNodo);
 
     // --- LÓGICA NUEVA PARA CARGAR LA IMAGEN ---
@@ -316,7 +318,8 @@ function crearMomentoEnLienzoDesdeDatos(datos) {
     // Estos se mantienen por compatibilidad.
     nuevoNodo.dataset.entorno = '{}';
    nuevoNodo.dataset.entidades = datos.entidades ? JSON.stringify(datos.entidades) : '[]';
-
+   nuevoNodo.dataset.llavesActivar = datos.llavesActivar || '';
+    nuevoNodo.dataset.llavesDesactivar = datos.llavesDesactivar || '';
     
     const imgElement = nuevoNodo.querySelector('.momento-imagen');
 

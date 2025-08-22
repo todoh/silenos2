@@ -15,11 +15,15 @@ let panelState = {
     entidadesContainer: null,
     accionesContainer: null,
     agregarAccionBtn: null,
+    // [NUEVO] Referencias para llaves
+    llavesActivarInput: null,
+    llavesDesactivarInput: null,
 };
 
 
 /**
- * Inicializa el panel de edición, obteniendo referencias a sus elementos y añadiendo listeners.
+ * [MODIFICADO]
+ * Inicializa el panel de edición, creando la nueva interfaz para llaves y condiciones.
  */
 function inicializarPanelEdicion() {
     console.log('[EditorMomento] Inicializando...');
@@ -33,22 +37,34 @@ function inicializarPanelEdicion() {
 
     s.panelElement.innerHTML = `
         <div class="panel-header">
-            <h3>Editar Momento</h3>
+          
             <button id="panel-edicion-cerrar-btn" class="panel-cerrar-btn">×</button>
         </div>
         <div class="panel-contenido">
             <input type="text" id="panel-editor-titulo" placeholder="Título del momento...">
             <textarea id="panel-editor-descripcion" rows="4" placeholder="Describe lo que sucede en este momento..."></textarea>
             <hr>
-            <div id="panel-entorno-container">
-                </div>
+            <div id="panel-entorno-container"></div>
             <hr>
-            <div id="panel-entidades-container">
-                </div>
+            <div id="panel-entidades-container"></div>
             <button id="panel-boton-agregar-entidad" class="btn-accion-agregar"><i class="fas fa-plus"></i> Añadir Entidad</button>
             <hr>
-            <div id="panel-acciones-container">
+            
+            <!-- [NUEVO] Sección para gestionar llaves -->
+            
+            <div id="panel-llaves-container" class="panel-campo-doble">
+                <div class="panel-campo">
+                    <label>Activar Llaves (separadas por coma):</label>
+                    <input type="text" id="panel-llaves-activar" placeholder="ej: llave_roja, tiene_espada">
                 </div>
+                <div class="panel-campo">
+                    <label>Desactivar Llaves (separadas por coma):</label>
+                    <input type="text" id="panel-llaves-desactivar" placeholder="ej: puerta_abierta, personaje_huyo">
+                </div>
+            </div>
+            <hr>
+
+            <div id="panel-acciones-container"></div>
             <button id="panel-boton-agregar-accion" class="btn-accion-agregar"><i class="fas fa-plus"></i> Añadir Acción</button>
         </div>
     `;
@@ -59,6 +75,11 @@ function inicializarPanelEdicion() {
     s.entidadesContainer = document.getElementById('panel-entidades-container');
     s.accionesContainer = document.getElementById('panel-acciones-container');
     s.agregarAccionBtn = document.getElementById('panel-boton-agregar-accion');
+    
+    // [NUEVO] Referencias para los inputs de llaves
+    s.llavesActivarInput = document.getElementById('panel-llaves-activar');
+    s.llavesDesactivarInput = document.getElementById('panel-llaves-desactivar');
+    
     const agregarEntidadBtn = document.getElementById('panel-boton-agregar-entidad');
     const cerrarBtn = document.getElementById('panel-edicion-cerrar-btn');
 
@@ -66,14 +87,18 @@ function inicializarPanelEdicion() {
     s.tituloInput?.addEventListener('input', actualizarDatosNodo);
     s.descripcionInput?.addEventListener('input', actualizarDatosNodo);
     s.agregarAccionBtn.addEventListener('click', () => agregarNuevaAccionAPanel());
-    
     agregarEntidadBtn.addEventListener('click', abrirModalSeleccionEntidad);
+
+    // [NUEVO] Listeners para los inputs de llaves
+    s.llavesActivarInput?.addEventListener('input', actualizarDatosNodo);
+    s.llavesDesactivarInput?.addEventListener('input', actualizarDatosNodo);
 
     console.log('[EditorMomento] Inicialización completada.');
 }
 
 /**
- * Muestra y puebla el panel de edición con los datos de un nodo.
+ * [MODIFICADO]
+ * Muestra y puebla el panel de edición, incluyendo los nuevos campos de llaves.
  * @param {HTMLElement} nodo - El elemento del nodo del momento a editar.
  */
 function mostrarPanelEdicion(nodo) {
@@ -83,6 +108,10 @@ function mostrarPanelEdicion(nodo) {
 
     s.tituloInput.value = nodo.querySelector('.momento-titulo').textContent;
     s.descripcionInput.value = nodo.dataset.descripcion || '';
+
+    // [NUEVO] Poblar los campos de llaves
+    s.llavesActivarInput.value = nodo.dataset.llavesActivar || '';
+    s.llavesDesactivarInput.value = nodo.dataset.llavesDesactivar || '';
 
     // Poblar entorno, entidades y acciones
     const entornoData = JSON.parse(nodo.dataset.entorno || '{}');
@@ -97,22 +126,16 @@ function mostrarPanelEdicion(nodo) {
     s.panelElement.classList.add('visible');
 }
 
-
-function ocultarPanelEdicion() {
-    if (panelState.panelElement) panelState.panelElement.classList.remove('visible');
-    if (panelState.nodoActual) panelState.nodoActual.classList.remove('momento-seleccionado');
-    panelState.nodoActual = null;
-    if (window.previsualizacionActiva && typeof dibujarConexiones === 'function') dibujarConexiones();
-}
-
 /**
- * Actualiza TODOS los datos del nodo en el DOM en tiempo real.
+ * [MODIFICADO]
+ * Actualiza el nodo principal con todos los datos del panel, incluyendo llaves y condiciones de acción.
  */
 function actualizarDatosNodo() {
     if (!panelState.nodoActual) return;
     const nodo = panelState.nodoActual;
     const s = panelState;
 
+    // Actualización de título, descripción, entorno y entidades (sin cambios en su lógica)
     nodo.querySelector('.momento-titulo').textContent = s.tituloInput.value;
     nodo.dataset.descripcion = s.descripcionInput.value;
 
@@ -122,29 +145,126 @@ function actualizarDatosNodo() {
     };
     nodo.dataset.entorno = JSON.stringify(entornoData);
 
-   const entidadesData = Array.from(s.entidadesContainer.querySelectorAll('.entidad-item')).map(item => {
-    const alturaInput = item.querySelector('.entidad-altura-input');
-    return {
+    const entidadesData = Array.from(s.entidadesContainer.querySelectorAll('.entidad-item')).map(item => ({
         recurso: item.dataset.recurso,
-        altura: parseInt(alturaInput.value, 10) || 65
-    };
-}).filter(e => e.recurso);
-nodo.dataset.entidades = JSON.stringify(entidadesData);
+        svg: item.dataset.svg || '',
+        altura: parseInt(item.querySelector('.entidad-altura-input').value, 10) || 0,
+        tamaño: parseInt(item.querySelector('.entidad-tamaño-input').value, 10) || 45,
+    })).filter(e => e.recurso);
+    nodo.dataset.entidades = JSON.stringify(entidadesData);
+    
+    // [NUEVO] Actualización de la gestión de llaves
+    nodo.dataset.llavesActivar = s.llavesActivarInput.value.trim();
+    nodo.dataset.llavesDesactivar = s.llavesDesactivarInput.value.trim();
 
-
+    // [MODIFICADO] Actualización de acciones para incluir las condiciones
     const accionesData = Array.from(s.accionesContainer.querySelectorAll('.accion-item')).map(item => ({
-        textoBoton: item.querySelector('input[type="text"]').value,
-        idDestino: item.querySelector('select.accion-destino-select').value
+        textoBoton: item.querySelector('.accion-texto-input').value,
+        idDestino: item.querySelector('.accion-destino-select').value,
+        condicionTipo: item.querySelector('.accion-condicion-tipo').value,
+        condicionLlave: item.querySelector('.accion-condicion-llave').value
     })).filter(a => a.textoBoton && a.idDestino);
     nodo.dataset.acciones = JSON.stringify(accionesData);
 
     if (window.previsualizacionActiva && typeof dibujarConexiones === 'function') dibujarConexiones();
 }
 
- 
 /**
- * Crea y muestra un modal con una cuadrícula de todos los "Datos" disponibles.
+ * [MODIFICADO]
+ * Crea el elemento de una acción en el panel, con la nueva interfaz de condiciones.
+ * @param {object} data - Los datos de la acción a crear.
  */
+function crearElementoAccionPanel(data = { textoBoton: '', idDestino: '', condicionTipo: 'siempre_visible', condicionLlave: '' }) {
+    const div = document.createElement('div');
+    div.className = 'accion-item item-panel';
+
+    // Contenedor para la primera fila (texto y destino)
+    const fila1 = document.createElement('div');
+    fila1.className = 'accion-fila';
+
+    const textoInput = document.createElement('input');
+    textoInput.type = 'text';
+    textoInput.className = 'accion-texto-input';
+    textoInput.placeholder = 'Texto del botón...';
+    textoInput.value = data.textoBoton || '';
+
+    const selectDestino = document.createElement('select');
+    selectDestino.className = 'accion-destino-select';
+    selectDestino.innerHTML = '<option value="">-- Seleccionar Destino --</option>';
+    document.querySelectorAll('#momentos-lienzo .momento-nodo').forEach(nodo => {
+        if (nodo.id !== panelState.nodoActual.id) {
+            const option = document.createElement('option');
+            option.value = nodo.id;
+            option.textContent = nodo.querySelector('.momento-titulo').textContent.trim();
+            selectDestino.appendChild(option);
+        }
+    });
+    selectDestino.value = data.idDestino || '';
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-item-btn';
+    deleteBtn.innerHTML = '×';
+    deleteBtn.onclick = () => {
+        div.remove();
+        actualizarDatosNodo();
+    };
+
+    fila1.append(textoInput, selectDestino, deleteBtn);
+
+    // Contenedor para la segunda fila (condiciones)
+    const fila2 = document.createElement('div');
+    fila2.className = 'accion-fila';
+    
+    const selectCondicion = document.createElement('select');
+    selectCondicion.className = 'accion-condicion-tipo';
+    selectCondicion.innerHTML = `
+        <option value="siempre_visible">Visible Siempre</option>
+        <option value="una_vez">Visible Solo 1 Vez</option>
+        <option value="visible_si">Visible Solo Si...</option>
+        <option value="invisible_si">Invisible Solo Si...</option>
+    `;
+    selectCondicion.value = data.condicionTipo || 'siempre_visible';
+
+    const llaveInput = document.createElement('input');
+    llaveInput.type = 'text';
+    llaveInput.className = 'accion-condicion-llave';
+    llaveInput.placeholder = 'Nombre de la llave...';
+    llaveInput.value = data.condicionLlave || '';
+    
+    // Lógica para mostrar/ocultar el input de la llave
+    const toggleLlaveInput = () => {
+        const tipo = selectCondicion.value;
+        if (tipo === 'visible_si' || tipo === 'invisible_si') {
+            llaveInput.style.display = 'block';
+        } else {
+            llaveInput.style.display = 'none';
+        }
+    };
+    
+    selectCondicion.addEventListener('change', toggleLlaveInput);
+    
+    fila2.append(selectCondicion, llaveInput);
+    
+    div.append(fila1, fila2);
+    div.querySelectorAll('input, select').forEach(el => el.addEventListener('input', actualizarDatosNodo));
+    
+    // Llamada inicial para establecer la visibilidad correcta del input
+    toggleLlaveInput(); 
+    
+    return div;
+}
+
+// =================================================================
+// ===== FUNCIONES SIN CAMBIOS (COPIADAS DEL ARCHIVO ORIGINAL) =====
+// =================================================================
+
+function ocultarPanelEdicion() {
+    if (panelState.panelElement) panelState.panelElement.classList.remove('visible');
+    if (panelState.nodoActual) panelState.nodoActual.classList.remove('momento-seleccionado');
+    panelState.nodoActual = null;
+    if (window.previsualizacionActiva && typeof dibujarConexiones === 'function') dibujarConexiones();
+}
+
 function abrirModalSeleccionEntidad() {
     if (document.getElementById('modal-seleccion-entidad')) return;
 
@@ -179,6 +299,7 @@ function abrirModalSeleccionEntidad() {
                 const gridItem = document.createElement('div');
                 gridItem.className = 'grid-item-entidad';
                 gridItem.innerHTML = `<img src="${imgSrc}" alt="${nombre}" /><span>${nombre}</span>`;
+                
                 gridItem.onclick = () => {
                     agregarEntidadDesdeDato(nombre);
                     cerrarModalSeleccionEntidad();
@@ -199,31 +320,39 @@ function cerrarModalSeleccionEntidad() {
     if (modal) modal.remove();
 }
 
-/**
- * Añade la entidad seleccionada desde el modal al panel de edición.
- * @param {string} nombreDato - El nombre del "Dato" seleccionado.
- */
 function agregarEntidadDesdeDato(nombreDato) {
     if (!panelState.nodoActual) return;
-    const nuevoElemento = crearElementoEntidadPanel({ recurso: nombreDato });
+
+    const datoOriginalEl = Array.from(document.querySelectorAll('#listapersonajes .personaje'))
+                                .find(p => p.querySelector('.nombreh')?.value.trim() === nombreDato);
+
+    if (!datoOriginalEl) {
+        console.error(`No se encontró el dato original con el nombre "${nombreDato}"`);
+        return;
+    }
+
+    const datosEntidad = {
+        recurso: nombreDato,
+        svg: datoOriginalEl.dataset.svgContent || '',
+        altura: 0, 
+        tamaño: 45
+    };
+
+    const nuevoElemento = crearElementoEntidadPanel(datosEntidad);
     panelState.entidadesContainer.appendChild(nuevoElemento);
     actualizarDatosNodo();
 }
-/**
- * [CORREGIDO] - Reemplaza la función original con esta.
- * Hemos hecho el código más robusto, asegurando que encuentra los botones
- * antes de intentar asignarles un evento 'click'.
- */
+
 function poblarEntornoPanel(data = {}) {
     const container = panelState.entornoContainer;
     container.innerHTML = `
-        <div class="panel-campo">
+        <div class="panel-campo" display="none">
             <label>Textura Suelo:</label>
             <select id="entorno-suelo-select">
                 <option value="">-- Sin Textura --</option>
             </select>
         </div>
-        <div class="panel-campo">
+        <div class="panel-campo" display="none" >
             <label>Color Cielo:</label>
             <input type="color" id="entorno-cielo-input" value="${data.colorCielo || '#87ceeb'}">
         </div>
@@ -255,7 +384,6 @@ function poblarEntornoPanel(data = {}) {
     }
     selectSuelo.value = data.texturaSuelo || '';
 
-    // --- SECCIÓN DE LISTENERS REVISADA PARA MAYOR ROBUSTEZ ---
     const btnIlustrar = container.querySelector('#btn-ilustrar-momento-ia');
     const btnSeleccionarFondo = container.querySelector('#btn-seleccionar-fondo-dato');
 
@@ -272,18 +400,12 @@ function poblarEntornoPanel(data = {}) {
     if (btnSeleccionarFondo) {
         btnSeleccionarFondo.addEventListener('click', abrirModalSeleccionFondo);
     } else {
-        // Este mensaje aparecerá en la consola si el botón no se encuentra por alguna razón.
         console.error("Error: No se encontró el botón 'Seleccionar Fondo'.");
     }
     
     container.querySelectorAll('input, select').forEach(input => input.addEventListener('input', actualizarDatosNodo));
 }
 
-
-/**
- * [MODIFICADO] - Abre el modal para seleccionar el fondo.
- * Ahora busca el código SVG original del "Dato" seleccionado.
- */
 function abrirModalSeleccionFondo() {
     const modalExistente = document.getElementById('modal-seleccion-entidad');
     if (modalExistente) {
@@ -323,13 +445,10 @@ function abrirModalSeleccionFondo() {
                 gridItem.className = 'grid-item-entidad';
                 gridItem.innerHTML = `<img src="${imgSrc}" alt="${nombre}" /><span>${nombre}</span>`;
                 
-                // --- MEJORA CLAVE ---
-                // Al hacer clic, buscamos el SVG original y lo pasamos a la función de aplicar.
                 gridItem.onclick = () => {
                     const datoOriginalEl = Array.from(document.querySelectorAll('#listapersonajes .personaje')).find(p => p.querySelector('.nombreh')?.value.trim() === nombre);
                     let svgCode = null;
                     if (datoOriginalEl) {
-                        // CORRECCIÓN: Se busca el SVG en el dataset, no como un elemento hijo.
                         svgCode = datoOriginalEl.dataset.svgContent || null;
                     }
                     aplicarFondoDesdeDato(imgSrc, svgCode);
@@ -345,65 +464,44 @@ function abrirModalSeleccionFondo() {
         if (e.target === modalOverlay) cerrarModalSeleccionFondo();
     };
 }
-/**
- * [MODIFICADO] Cierra el modal de selección de fondo.
- */
+
 function cerrarModalSeleccionFondo() {
     const modal = document.getElementById('modal-seleccion-entidad');
     if (modal) modal.remove();
 }
 
-/**
- * [MODIFICADO] Aplica la imagen y "normaliza" el SVG para un correcto escalado.
- * @param {string} imgSrc - La URL de la imagen para la previsualización.
- * @param {string|null} svgCode - El código HTML del SVG, si se encontró.
- */
 function aplicarFondoDesdeDato(imgSrc, svgCode = null) {
     if (!panelState.nodoActual) return;
     const nodo = panelState.nodoActual;
     
     const imgElement = nodo.querySelector('.momento-imagen');
     if (imgElement) {
-        imgElement.src = imgSrc; // Pone una imagen de preview mientras procesa el SVG.
+        imgElement.src = imgSrc;
         nodo.classList.add('con-imagen');
         
         if (svgCode) {
-            // --- INICIO DE LA SOLUCIÓN SENCILLA ---
-            // Para asegurar que el SVG se centre y escale, se modifica su código.
             const parser = new DOMParser();
             const svgDoc = parser.parseFromString(svgCode, "image/svg+xml");
             const svgElement = svgDoc.documentElement;
 
-            // Se añaden los atributos para que ocupe el 100% del espacio y se centre.
             svgElement.setAttribute('width', '100%');
             svgElement.setAttribute('height', '100%');
             svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-
-            // Se eliminan 'x' e 'y' para evitar desplazamientos.
             svgElement.removeAttribute('x');
             svgElement.removeAttribute('y');
 
             const serializer = new XMLSerializer();
             const svgCorregido = serializer.serializeToString(svgElement);
 
-            // Se guarda y muestra el SVG corregido.
             nodo.dataset.svgIlustracion = svgCorregido;
             const svgDataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgCorregido)));
             imgElement.src = svgDataUrl;
-            // --- FIN DE LA SOLUCIÓN ---
 
         } else {
-            // Si no es un SVG, se borra el dato SVG anterior.
             delete nodo.dataset.svgIlustracion;
         }
     }
 }
-
-
-// --- FIN DE LAS NUEVAS FUNCIONES ---
-
-
-// --- FUNCIONES PARA POBLAR EL PANEL (ACTUALIZADAS) ---
 
 function poblarEntidadesPanel(entidades = []) {
     const container = panelState.entidadesContainer;
@@ -415,17 +513,23 @@ function poblarEntidadesPanel(entidades = []) {
     }
 }
 
-function crearElementoEntidadPanel(data = { recurso: '', altura: 65 }) {
+function crearElementoEntidadPanel(data = { recurso: '', altura: 0, svg: '', tamaño: 45 }) {
     const div = document.createElement('div');
     div.className = 'entidad-item item-panel';
     div.dataset.recurso = data.recurso;
+    div.dataset.svg = data.svg || '';
 
     div.innerHTML = `
         <span class="entidad-nombre">${data.recurso}</span>
         <div class="entidad-controles">
             <label>Altura:</label>
-            <input type="number" class="entidad-altura-input" value="${data.altura || 65}" min="10" max="150" step="1">
+            <input type="number" class="entidad-altura-input" value="${data.altura || 0}" min="0" max="150" step="1">
             <span>%</span>
+
+            <label style="margin-left: 10px;">Tamaño:</label>
+            <input type="number" class="entidad-tamaño-input" value="${data.tamaño || 45}" min="5" max="100" step="1">
+            <span>%</span>
+
             <button class="delete-item-btn">&times;</button>
         </div>
     `;
@@ -436,12 +540,10 @@ function crearElementoEntidadPanel(data = { recurso: '', altura: 65 }) {
     };
     
     div.querySelector('.entidad-altura-input').addEventListener('input', actualizarDatosNodo);
+    div.querySelector('.entidad-tamaño-input').addEventListener('input', actualizarDatosNodo);
 
     return div;
 }
-
-
- 
 
 function poblarAccionesPanel(acciones = []) {
     const container = panelState.accionesContainer;
@@ -457,37 +559,6 @@ function agregarNuevaAccionAPanel() {
     if (!panelState.nodoActual) return;
     const nuevoElemento = crearElementoAccionPanel();
     panelState.accionesContainer.appendChild(nuevoElemento);
-}
-
-function crearElementoAccionPanel(data = { textoBoton: '', idDestino: '' }) {
-    const div = document.createElement('div');
-    div.className = 'accion-item item-panel';
-    const textoInput = document.createElement('input');
-    textoInput.type = 'text';
-    textoInput.placeholder = 'Texto del botón...';
-    textoInput.value = data.textoBoton;
-    const selectDestino = document.createElement('select');
-    selectDestino.className = 'accion-destino-select';
-    selectDestino.innerHTML = '<option value="">-- Seleccionar Destino --</option>';
-    document.querySelectorAll('#momentos-lienzo .momento-nodo').forEach(nodo => {
-        if (nodo.id !== panelState.nodoActual.id) {
-            const option = document.createElement('option');
-            option.value = nodo.id;
-            option.textContent = nodo.querySelector('.momento-titulo').textContent.trim();
-            selectDestino.appendChild(option);
-        }
-    });
-    selectDestino.value = data.idDestino;
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'delete-item-btn';
-    deleteBtn.innerHTML = '×';
-    deleteBtn.onclick = () => {
-        div.remove();
-        actualizarDatosNodo();
-    };
-    div.append(textoInput, selectDestino, deleteBtn);
-    div.querySelectorAll('input, select').forEach(el => el.addEventListener('input', actualizarDatosNodo));
-    return div;
 }
 
 // Inicializar el módulo cuando el DOM esté listo
