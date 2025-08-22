@@ -21,10 +21,7 @@ let panelState = {
 };
 
 
-/**
- * [MODIFICADO]
- * Inicializa el panel de edición, creando la nueva interfaz para llaves y condiciones.
- */
+ 
 function inicializarPanelEdicion() {
     console.log('[EditorMomento] Inicializando...');
 
@@ -37,7 +34,6 @@ function inicializarPanelEdicion() {
 
     s.panelElement.innerHTML = `
         <div class="panel-header">
-          
             <button id="panel-edicion-cerrar-btn" class="panel-cerrar-btn">×</button>
         </div>
         <div class="panel-contenido">
@@ -50,7 +46,17 @@ function inicializarPanelEdicion() {
             <button id="panel-boton-agregar-entidad" class="btn-accion-agregar"><i class="fas fa-plus"></i> Añadir Entidad</button>
             <hr>
             
-            <!-- [NUEVO] Sección para gestionar llaves -->
+            <div id="panel-inventario-container" class="panel-campo-doble">
+                <div class="panel-campo">
+                    <label>Añadir al inventario (nombres de Datos separados por coma):</label>
+                    <input type="text" id="panel-objetos-ganar" placeholder="ej: Espada Maestra, Poción Roja">
+                </div>
+                <div class="panel-campo">
+                    <label>Quitar del inventario (nombres de Datos separados por coma):</label>
+                    <input type="text" id="panel-objetos-perder" placeholder="ej: Llave Oxidada, Nota Arrugada">
+                </div>
+            </div>
+            <hr>
             
             <div id="panel-llaves-container" class="panel-campo-doble">
                 <div class="panel-campo">
@@ -69,31 +75,37 @@ function inicializarPanelEdicion() {
         </div>
     `;
 
+    // --- Referencias existentes ---
     s.tituloInput = document.getElementById('panel-editor-titulo');
     s.descripcionInput = document.getElementById('panel-editor-descripcion');
     s.entornoContainer = document.getElementById('panel-entorno-container');
     s.entidadesContainer = document.getElementById('panel-entidades-container');
     s.accionesContainer = document.getElementById('panel-acciones-container');
     s.agregarAccionBtn = document.getElementById('panel-boton-agregar-accion');
-    
-    // [NUEVO] Referencias para los inputs de llaves
     s.llavesActivarInput = document.getElementById('panel-llaves-activar');
     s.llavesDesactivarInput = document.getElementById('panel-llaves-desactivar');
+    
+    // --- [NUEVO] Referencias para los inputs de inventario ---
+    s.objetosGanarInput = document.getElementById('panel-objetos-ganar');
+    s.objetosPerderInput = document.getElementById('panel-objetos-perder');
     
     const agregarEntidadBtn = document.getElementById('panel-boton-agregar-entidad');
     const cerrarBtn = document.getElementById('panel-edicion-cerrar-btn');
 
+    // --- Listeners existentes ---
     cerrarBtn?.addEventListener('click', ocultarPanelEdicion);
     s.tituloInput?.addEventListener('input', actualizarDatosNodo);
     s.descripcionInput?.addEventListener('input', actualizarDatosNodo);
     s.agregarAccionBtn.addEventListener('click', () => agregarNuevaAccionAPanel());
     agregarEntidadBtn.addEventListener('click', abrirModalSeleccionEntidad);
-
-    // [NUEVO] Listeners para los inputs de llaves
     s.llavesActivarInput?.addEventListener('input', actualizarDatosNodo);
     s.llavesDesactivarInput?.addEventListener('input', actualizarDatosNodo);
+    
+    // --- [NUEVO] Listeners para los inputs de inventario ---
+    s.objetosGanarInput?.addEventListener('input', actualizarDatosNodo);
+    s.objetosPerderInput?.addEventListener('input', actualizarDatosNodo);
 
-    console.log('[EditorMomento] Inicialización completada.');
+    console.log('[EditorMomento] Inicialización completada con inventario.');
 }
 
 /**
@@ -101,6 +113,9 @@ function inicializarPanelEdicion() {
  * Muestra y puebla el panel de edición, incluyendo los nuevos campos de llaves.
  * @param {HTMLElement} nodo - El elemento del nodo del momento a editar.
  */
+// EN: editor-momento.js
+// REEMPLAZA la función completa
+
 function mostrarPanelEdicion(nodo) {
     if (!panelState.panelElement) return;
     panelState.nodoActual = nodo;
@@ -109,9 +124,13 @@ function mostrarPanelEdicion(nodo) {
     s.tituloInput.value = nodo.querySelector('.momento-titulo').textContent;
     s.descripcionInput.value = nodo.dataset.descripcion || '';
 
-    // [NUEVO] Poblar los campos de llaves
+    // Poblar campos de llaves
     s.llavesActivarInput.value = nodo.dataset.llavesActivar || '';
     s.llavesDesactivarInput.value = nodo.dataset.llavesDesactivar || '';
+
+    // [NUEVO] Poblar los campos de inventario
+    s.objetosGanarInput.value = nodo.dataset.objetosGanar || '';
+    s.objetosPerderInput.value = nodo.dataset.objetosPerder || '';
 
     // Poblar entorno, entidades y acciones
     const entornoData = JSON.parse(nodo.dataset.entorno || '{}');
@@ -126,16 +145,16 @@ function mostrarPanelEdicion(nodo) {
     s.panelElement.classList.add('visible');
 }
 
-/**
- * [MODIFICADO]
- * Actualiza el nodo principal con todos los datos del panel, incluyendo llaves y condiciones de acción.
- */
+
+
+
+
 function actualizarDatosNodo() {
     if (!panelState.nodoActual) return;
     const nodo = panelState.nodoActual;
     const s = panelState;
 
-    // Actualización de título, descripción, entorno y entidades (sin cambios en su lógica)
+    // Actualización de título, descripción, entorno y entidades (sin cambios)
     nodo.querySelector('.momento-titulo').textContent = s.tituloInput.value;
     nodo.dataset.descripcion = s.descripcionInput.value;
 
@@ -153,11 +172,15 @@ function actualizarDatosNodo() {
     })).filter(e => e.recurso);
     nodo.dataset.entidades = JSON.stringify(entidadesData);
     
-    // [NUEVO] Actualización de la gestión de llaves
+    // Actualización de la gestión de llaves
     nodo.dataset.llavesActivar = s.llavesActivarInput.value.trim();
     nodo.dataset.llavesDesactivar = s.llavesDesactivarInput.value.trim();
 
-    // [MODIFICADO] Actualización de acciones para incluir las condiciones
+    // [NUEVO] Actualización de la gestión de inventario
+    nodo.dataset.objetosGanar = s.objetosGanarInput.value.trim();
+    nodo.dataset.objetosPerder = s.objetosPerderInput.value.trim();
+
+    // Actualización de acciones para incluir las condiciones
     const accionesData = Array.from(s.accionesContainer.querySelectorAll('.accion-item')).map(item => ({
         textoBoton: item.querySelector('.accion-texto-input').value,
         idDestino: item.querySelector('.accion-destino-select').value,

@@ -133,7 +133,8 @@ async function empaquetarDatosDelProyecto() {
         // Se añaden estas dos líneas para leer los dataset de las llaves
         const llavesActivar = nodo.dataset.llavesActivar || '';
         const llavesDesactivar = nodo.dataset.llavesDesactivar || '';
-
+ const objetosGanar = nodo.dataset.objetosGanar || '';
+        const objetosPerder = nodo.dataset.objetosPerder || '';
         return {
             id: nodo.id,
             titulo: nodo.querySelector('.momento-titulo').textContent,
@@ -146,7 +147,9 @@ async function empaquetarDatosDelProyecto() {
             entidades: JSON.parse(nodo.dataset.entidades || '[]'),
             // Y se añaden aquí al objeto que se va a guardar
             llavesActivar: llavesActivar,
-            llavesDesactivar: llavesDesactivar
+            llavesDesactivar: llavesDesactivar,
+              objetosGanar: objetosGanar,
+            objetosPerder: objetosPerder
         };
     });
 

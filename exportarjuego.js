@@ -5,6 +5,10 @@
  * [MODIFICADO] - Genera el juego, priorizando el uso de SVG para las entidades.
  * @param {string} nombreMomentoInicial - El NOMBRE del primer momento que se mostrará.
  */
+ 
+// EN: exportarjuego.js
+// REEMPLAZA la función completa
+
 async function generarGAME(nombreMomentoInicial) {
     const tituloProyecto = document.getElementById("titulo-proyecto").innerText;
 
@@ -49,36 +53,29 @@ async function generarGAME(nombreMomentoInicial) {
         return;
     }
     
-    // Mapa de imágenes de previsualización (usado como fallback)
-    const datosImagenMap = new Map();
+    // Mapa con la información visual de TODOS los datos (sin cambios)
+    const datosVisualesMap = new Map();
     document.querySelectorAll('#listapersonajes .personaje').forEach(datoEl => {
         const nombre = datoEl.querySelector('.nombreh')?.value.trim();
         const imgSrc = datoEl.querySelector('.personaje-visual img')?.src;
-        if (nombre && imgSrc) {
-            datosImagenMap.set(nombre, imgSrc);
+        const svgContent = datoEl.dataset.svgContent || '';
+        if (nombre) {
+            datosVisualesMap.set(nombre, { imagen: imgSrc, svg: svgContent });
         }
     });
 
-    // Recopilación de datos de momentos (ahora incluye el SVG en las entidades)
-     const momentosData = {};
+    // Recopilación de datos de momentos (sin cambios)
+    const momentosData = {};
     for (const nodo of nodosMomento) {
         const titulo = nodo.querySelector('.momento-titulo').textContent;
         const sanitizedTitulo = idToSanitizedNameMap.get(nodo.id);
-        
-        // Las acciones ya contienen toda la info nueva gracias a JSON.parse
         const accionesOriginales = JSON.parse(nodo.dataset.acciones || '[]');
-        const accionesMapeadas = accionesOriginales.map(accion => ({
-            ...accion,
-            idDestino: idToSanitizedNameMap.get(accion.idDestino) || ''
-        })).filter(accion => accion.idDestino);
-        
+        const accionesMapeadas = accionesOriginales.map(accion => ({ ...accion, idDestino: idToSanitizedNameMap.get(accion.idDestino) || '' })).filter(accion => accion.idDestino);
         const entidades = JSON.parse(nodo.dataset.entidades || '[]');
-        
-        // [NUEVO] Parseamos las listas de llaves a arrays limpios
-        const llavesActivar = (nodo.dataset.llavesActivar || '').split(',')
-                                .map(k => k.trim()).filter(Boolean);
-        const llavesDesactivar = (nodo.dataset.llavesDesactivar || '').split(',')
-                                .map(k => k.trim()).filter(Boolean);
+        const llavesActivar = (nodo.dataset.llavesActivar || '').split(',').map(k => k.trim()).filter(Boolean);
+        const llavesDesactivar = (nodo.dataset.llavesDesactivar || '').split(',').map(k => k.trim()).filter(Boolean);
+        const objetosGanar = (nodo.dataset.objetosGanar || '').split(',').map(o => o.trim()).filter(Boolean);
+        const objetosPerder = (nodo.dataset.objetosPerder || '').split(',').map(o => o.trim()).filter(Boolean);
 
         momentosData[sanitizedTitulo] = {
             titulo: titulo,
@@ -87,122 +84,117 @@ async function generarGAME(nombreMomentoInicial) {
             imagenFallback: nodo.querySelector('.momento-imagen').src,
             acciones: accionesMapeadas,
             entidades: entidades,
-            llavesActivar: llavesActivar,       // <-- Nuevo
-            llavesDesactivar: llavesDesactivar  // <-- Nuevo
+            llavesActivar: llavesActivar,
+            llavesDesactivar: llavesDesactivar,
+            objetosGanar: objetosGanar,
+            objetosPerder: objetosPerder
         };
     }
 
-    // Creación del HTML y CSS (sin cambios)
+    // --- [INICIO] MODIFICACIÓN DE CSS ---
     const nombreInicialSanitizado = sanitizarParaId(nombreMomentoInicial);
     const css = `
-        html, body {
-            margin: 0; padding: 0; height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #1a1a1a;
-            color: #ffffff;
-            overflow: hidden;
-        }
-        .game-container {
-            position: relative; /* Contenedor principal para posicionar capas */
-            width: 100%;
-            height: 100%;
-        }
-        .background-container {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #000;
-        }
-       #game-image-bg {
-            width: 100%; /* La imagen debe ocupar el 100% del ancho de su contenedor */
-            height: 100%; /* Y el 100% del alto */
-            object-fit: cover !important; /* Mantiene la proporción y cubre todo el espacio, recortando lo que sobre */
-            object-position: center bottom; /* Se asegura de que la imagen permanezca centrada */
-        }
-        /* --- NUEVO: Contenedor para las entidades superpuestas --- */
-        #game-entities-overlay {
-            position: absolute;
-            bottom: 0; /* Lo alineamos abajo */
-            left: 0;
-            width: 100%;
-            height: 95%; /* Ocupa la mitad inferior de la pantalla */
-            display: flex;
-            justify-content: center; /* Centra las entidades horizontalmente */
-            align-items: flex-end; /* Alinea las entidades en la base */
-            padding-bottom: 2%; /* Un pequeño margen inferior */
-            gap: 1vw; /* Espacio entre entidades */
-            pointer-events: none; /* Para que no interfiera con los botones */
-        }
-        .entity-sprite {
-           
-            object-fit: contain; /* Mantiene la proporción de la imagen */
-            -webkit-filter: drop-shadow(5px 5px 5px #222); /* Sombra para resaltar */
-            filter: drop-shadow(5px 5px 5px #222);
-        }
- 
+        html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #1a1a1a; color: #ffffff; overflow: hidden; }
+        .game-container { position: relative; width: 100%; height: 100%; }
+        .background-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; }
+        #game-image-bg { width: 100%; height: 100%; object-fit: cover !important; object-position: center bottom; }
+        #game-entities-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 95%; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 2%; gap: 1vw; pointer-events: none; }
+        .entity-sprite { object-fit: contain; -webkit-filter: drop-shadow(5px 5px 5px #222); filter: drop-shadow(5px 5px 5px #222); }
+        .content-container { position: absolute; left: 50%; transform: translateX(-50%); bottom: 5%; width: 90%; max-width: 1100px; padding: 20px; border-radius: 12px; background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-sizing: border-box; text-align: center; }
+        #game-title { margin: 0 0 10px 0; font-size: 1.6em; display: none; }
+        #game-description { margin: 0 0 15px 0; font-size: 1em; line-height: 1.5; }
+        .actions-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .action-button { padding: 10px 20px; font-size: 1em; font-weight: bold; color: #ffffff; background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease; }
+        .action-button:hover { background-color: rgba(255, 255, 255, 0.3); }
 
-        .content-container { 
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: 5%;
-            width: 90%;
-            max-width: 1100px;
-            padding: 20px;
-            border-radius: 12px;
-            background-color: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-sizing: border-box;
-            text-align: center;
+        /* --- CSS MEJORADO PARA EL INVENTARIO --- */
+        #inventory-ui-container { position: fixed; top: 20px; right: 20px; z-index: 100; }
+        #inventory-toggle-button {
+            width: 50px; height: 50px; border-radius: 50%; background-color: rgba(0,0,0,0.7); border: 2px solid rgba(255,255,255,0.3);
+            color: white; font-size: 24px; cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;
         }
-        #game-title {
-            margin: 0 0 10px 0; font-size: 1.6em; display: none;
+        .item-count-badge {
+            position: absolute; bottom: -2px; right: -2px; background-color: #c0392b; color: white;
+            border-radius: 50%; width: 20px; height: 20px; font-size: 12px; font-weight: bold;
+            display: flex; justify-content: center; align-items: center; border: 1px solid white;
         }
-     #game-description {
-    
-    margin: 0 0 15px 0; 
-    font-size: 1em; 
-    line-height: 1.5;
-}
-        .actions-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+        #inventory-modal {
+            display: none; /* Oculto por defecto */
+            position: absolute; top: 60px; right: 0;
+            width: 300px; max-height: 70vh; /* Altura máxima y scroll */
+            background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px;
+            padding: 15px; box-sizing: border-box;
+        }
+        #inventory-modal.visible { display: block; } /* Clase para mostrarlo */
+        #inventory-grid {
+            display: flex; flex-wrap: wrap; /* Para que sea una cuadrícula */
             gap: 10px;
+            overflow-y: auto; /* Scroll si el contenido es muy alto */
+            max-height: calc(70vh - 70px); /* Resta el padding y el título */
         }
-        .action-button {
-            padding: 10px 20px;
-            font-size: 1em;
-            font-weight: bold;
-            color: #ffffff;
-            background-color: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
+        .inventory-item {
+            position: relative; /* Para posicionar el contador */
+            width: 60px; height: 60px; background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 6px; padding: 5px; box-sizing: border-box;
+            display: flex; justify-content: center; align-items: center;
         }
-        .action-button:hover {
-            background-color: rgba(255, 255, 255, 0.3);
+        .inventory-item img, .inventory-item svg { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .item-quantity {
+            position: absolute; bottom: 2px; right: 4px;
+            background-color: rgba(0, 0, 0, 0.7); color: #fff;
+            padding: 1px 5px; border-radius: 10px; font-size: 12px; font-weight: bold;
         }
     `;
+    // --- [FIN] MODIFICACIÓN DE CSS ---
     
-    // -- CAMBIO CLAVE --
-    // El script del juego ahora sabe cómo manejar el SVG de una entidad.
-// Dentro de la función generarGAME, localiza la variable 'script' y reemplaza la función mostrarMomento.
-
-const script = `
+    // --- [INICIO] MODIFICACIÓN DEL SCRIPT DEL JUEGO ---
+    const script = `
     const momentos = ${JSON.stringify(momentosData)};
-    const datosImagenes = ${JSON.stringify(Object.fromEntries(datosImagenMap))};
+    const datosVisuales = ${JSON.stringify(Object.fromEntries(datosVisualesMap))};
     const idInicio = "${nombreInicialSanitizado}";
 
-    // [NUEVO] Estado global para las llaves y acciones usadas
+    // --- ESTADO GLOBAL ---
     let estadoLlaves = {};
     const accionesUsadas = new Set();
+    let inventario = new Map(); // <-- CAMBIO: Usamos un Map para guardar {nombreObjeto: cantidad}
 
-    /**
-     * [MODIFICADO] - La función clave del juego, ahora con lógica condicional.
-     */
+    // --- FUNCIÓN DE RENDERIZADO DEL INVENTARIO (MEJORADA) ---
+    function renderizarInventario() {
+        const inventoryGrid = document.getElementById('inventory-grid');
+        const countBadge = document.getElementById('inventory-item-count');
+        
+        inventoryGrid.innerHTML = ''; // Limpiar la cuadrícula
+        countBadge.textContent = inventario.size; // Actualizar el contador de items únicos
+
+        for (const [itemName, quantity] of inventario.entries()) {
+            const visual = datosVisuales[itemName];
+            if (!visual) continue;
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'inventory-item';
+            itemDiv.title = itemName;
+
+            if (visual.svg && visual.svg.trim() !== '') {
+                itemDiv.innerHTML = visual.svg;
+            } else if (visual.imagen) {
+                const img = document.createElement('img');
+                img.src = visual.imagen;
+                itemDiv.appendChild(img);
+            }
+            
+            // Añadir el contador de cantidad si es mayor que 1
+            if (quantity > 1) {
+                const quantityDiv = document.createElement('div');
+                quantityDiv.className = 'item-quantity';
+                quantityDiv.textContent = quantity;
+                itemDiv.appendChild(quantityDiv);
+            }
+
+            inventoryGrid.appendChild(itemDiv);
+        }
+    }
+
     function mostrarMomento(sanitizedName) {
         const momento = momentos[sanitizedName];
         if (!momento) {
@@ -210,114 +202,78 @@ const script = `
             return;
         }
 
-        // --- 1. ACTUALIZAR ESTADO DE LLAVES (se hace al entrar al momento) ---
-        if (momento.llavesActivar && momento.llavesActivar.length > 0) {
-            momento.llavesActivar.forEach(llave => {
-                estadoLlaves[llave] = true;
-                console.log('Llave ACTIVADA:', llave);
-            });
-        }
-        if (momento.llavesDesactivar && momento.llavesDesactivar.length > 0) {
-            momento.llavesDesactivar.forEach(llave => {
-                estadoLlaves[llave] = false;
-                console.log('Llave DESACTIVADA:', llave);
-            });
-        }
+        // --- 1. ACTUALIZAR ESTADO (LLAVES E INVENTARIO) ---
+        if (momento.llavesActivar) momento.llavesActivar.forEach(llave => { estadoLlaves[llave] = true; });
+        if (momento.llavesDesactivar) momento.llavesDesactivar.forEach(llave => { estadoLlaves[llave] = false; });
         
+        // --- LÓGICA DE INVENTARIO MEJORADA (PARA ACUMULAR OBJETOS) ---
+        if (momento.objetosGanar) {
+            momento.objetosGanar.forEach(obj => {
+                const currentCount = inventario.get(obj) || 0;
+                inventario.set(obj, currentCount + 1);
+            });
+        }
+        if (momento.objetosPerder) {
+            momento.objetosPerder.forEach(obj => {
+                const currentCount = inventario.get(obj);
+                if (currentCount > 1) {
+                    inventario.set(obj, currentCount - 1);
+                } else if (currentCount === 1) {
+                    inventario.delete(obj);
+                }
+            });
+        }
+
+        // --- 2. RENDERIZAR TODO ---
+        renderizarInventario(); // Actualizar la vista del inventario
+
         // Cargar fondo y entidades (sin cambios)
         const bgImageEl = document.getElementById('game-image-bg');
-        if (momento.svg && momento.svg.trim() !== '') {
-            bgImageEl.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(momento.svg)));
-        } else {
-            bgImageEl.src = momento.imagenFallback || '';
-        }
+        bgImageEl.src = (momento.svg) ? 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(momento.svg))) : momento.imagenFallback || '';
         const entitiesContainer = document.getElementById('game-entities-overlay');
         entitiesContainer.innerHTML = '';
-        if (momento.entidades && Array.isArray(momento.entidades)) {
-            momento.entidades.forEach(entidad => { /* ...lógica de entidades sin cambios... */ });
-        }
-        // --- LÓGICA DE RENDERIZADO DE ENTIDADES MODIFICADA ---
-        entitiesContainer.innerHTML = '';
-        if (momento.entidades && Array.isArray(momento.entidades)) {
+        if (momento.entidades) {
             momento.entidades.forEach(entidad => {
                 const entidadContainer = document.createElement('div');
                 entidadContainer.className = 'entity-sprite';
-                
-                // [NUEVO] Aplicar TAMAÑO y ALTURA (POSICIÓN Y)
-                // 1. El tamaño controla la altura de la entidad en 'vh' (porcentaje de la altura de la ventana).
                 entidadContainer.style.height = (entidad.tamaño || 45) + 'vh';
-                
-                // 2. La altura controla la separación desde la base (posición Y).
-                //    Usamos margin-bottom para "elevar" la entidad desde su posición base.
-                //    Multiplico por un factor para que el valor del input no sea tan extremo. Puedes ajustar 0.3 si quieres más o menos sensibilidad.
                 entidadContainer.style.marginBottom = ((entidad.altura || 0) * 0.3) + 'vh';
-
                 
-                if (entidad.svg && entidad.svg.trim() !== '') {
-                    // Si hay SVG, lo inyectamos directamente
+                if (entidad.svg) {
                     entidadContainer.innerHTML = entidad.svg;
-                } else {
-                    // Si no, usamos el <img> como fallback
+                } else if(datosVisuales[entidad.recurso]?.imagen) {
                     const fallbackImg = document.createElement('img');
-                    const fallbackSrc = datosImagenes[entidad.recurso];
-                    if (fallbackSrc) {
-                        fallbackImg.src = fallbackSrc;
-                        fallbackImg.style.width = '100%';
-                        fallbackImg.style.height = '100%';
-                        entidadContainer.appendChild(fallbackImg);
-                    }
+                    fallbackImg.src = datosVisuales[entidad.recurso].imagen;
+                    fallbackImg.style.width = '100%'; fallbackImg.style.height = '100%';
+                    entidadContainer.appendChild(fallbackImg);
                 }
                 entitiesContainer.appendChild(entidadContainer);
             });
         }
-        // Actualizar textos (sin cambios)
+        
         document.getElementById('game-title').textContent = momento.titulo;
         document.getElementById('game-description').innerHTML = momento.descripcion.replace(/\\n/g, "<br>");
         
-        // --- 2. RENDERIZAR ACCIONES CON LÓGICA CONDICIONAL ---
+        // Renderizar acciones con lógica condicional (sin cambios)
         const actionsContainer = document.getElementById('game-actions');
         actionsContainer.innerHTML = ''; 
-
         if (momento.acciones) {
             momento.acciones.forEach(accion => {
                 let esVisible = false;
                 const condicionTipo = accion.condicionTipo || 'siempre_visible';
                 const condicionLlave = accion.condicionLlave;
-
                 switch (condicionTipo) {
-                    case 'una_vez':
-                        const accionId = sanitizedName + '|' + accion.textoBoton;
-                        if (!accionesUsadas.has(accionId)) {
-                            esVisible = true;
-                        }
-                        break;
-                    case 'visible_si':
-                        if (estadoLlaves[condicionLlave]) {
-                            esVisible = true;
-                        }
-                        break;
-                    case 'invisible_si':
-                        if (!estadoLlaves[condicionLlave]) {
-                            esVisible = true;
-                        }
-                        break;
-                    case 'siempre_visible':
-                    default:
-                        esVisible = true;
-                        break;
+                    case 'una_vez': esVisible = !accionesUsadas.has(sanitizedName + '|' + accion.textoBoton); break;
+                    case 'visible_si': esVisible = !!estadoLlaves[condicionLlave]; break;
+                    case 'invisible_si': esVisible = !estadoLlaves[condicionLlave]; break;
+                    default: esVisible = true; break;
                 }
-
                 if (esVisible) {
                     const button = document.createElement('button');
                     button.className = 'action-button';
                     button.textContent = accion.textoBoton;
-                    
                     button.onclick = () => {
-                        // Si es una acción de un solo uso, la marcamos como usada.
-                        if (condicionTipo === 'una_vez') {
-                            const accionId = sanitizedName + '|' + accion.textoBoton;
-                            accionesUsadas.add(accionId);
-                        }
+                        if (condicionTipo === 'una_vez') accionesUsadas.add(sanitizedName + '|' + accion.textoBoton);
                         mostrarMomento(accion.idDestino);
                     };
                     actionsContainer.appendChild(button);
@@ -326,11 +282,29 @@ const script = `
         }
     }
     
-    window.onload = () => mostrarMomento(idInicio);
-`;
-// El resto de la función generarGAME sigue igual...
+    window.onload = () => {
+        mostrarMomento(idInicio);
 
-    // Creación del HTML final y descarga (sin cambios)
+        // --- NUEVOS LISTENERS PARA EL MODAL DEL INVENTARIO ---
+        const toggleBtn = document.getElementById('inventory-toggle-button');
+        const modal = document.getElementById('inventory-modal');
+
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Evita que el clic se propague al documento
+            modal.classList.toggle('visible');
+        });
+
+        document.addEventListener('click', (event) => {
+            // Si el modal está visible Y el clic fue fuera del modal Y fuera del botón que lo abre
+            if (modal.classList.contains('visible') && !modal.contains(event.target) && !toggleBtn.contains(event.target)) {
+                modal.classList.remove('visible');
+            }
+        });
+    };
+`;
+    // --- [FIN] MODIFICACIÓN DEL SCRIPT DEL JUEGO ---
+
+    // --- [INICIO] MODIFICACIÓN DEL HTML ---
     const htmlCompleto = `
 <!DOCTYPE html>
 <html lang="es">
@@ -342,6 +316,17 @@ const script = `
 </head>
 <body>
     <div class="game-container">
+        <div id="inventory-ui-container">
+            <button id="inventory-toggle-button" title="Abrir Inventario">
+                I
+                <span id="inventory-item-count" class="item-count-badge">0</span>
+            </button>
+            <div id="inventory-modal">
+                <h2 style="text-align: center; margin-top: 0; margin-bottom: 15px; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">Inventario</h2>
+                <div id="inventory-grid"></div>
+            </div>
+        </div>
+
         <div class="background-container">
             <img id="game-image-bg" src="" alt="Fondo de la escena">
         </div>
@@ -356,16 +341,15 @@ const script = `
     <\/script>
 </body>
 </html>`;
+    // --- [FIN] MODIFICACIÓN DEL HTML ---
 
     const blob = new Blob([htmlCompleto], { type: 'text/html' });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `${tituloProyecto.replace(/\s+/g, '_')}_Juego.html`;
     a.click();
-    console.log("Exportación de Videojuego con entidades (SVG-priorizado) completada.");
+    console.log("Exportación de Videojuego con INVENTARIO AVANZADO completada.");
 }
-
-
 
 
 

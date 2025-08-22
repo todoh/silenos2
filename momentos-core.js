@@ -320,7 +320,8 @@ function crearMomentoEnLienzoDesdeDatos(datos) {
    nuevoNodo.dataset.entidades = datos.entidades ? JSON.stringify(datos.entidades) : '[]';
    nuevoNodo.dataset.llavesActivar = datos.llavesActivar || '';
     nuevoNodo.dataset.llavesDesactivar = datos.llavesDesactivar || '';
-    
+      nuevoNodo.dataset.objetosGanar = datos.objetosGanar || '';
+    nuevoNodo.dataset.objetosPerder = datos.objetosPerder || '';
     const imgElement = nuevoNodo.querySelector('.momento-imagen');
 
     // --- LÓGICA CLAVE CORREGIDA ---
