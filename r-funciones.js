@@ -83,28 +83,47 @@ function createGeometry(params) {
  * @param {object} params - Parámetros del material desde el JSON.
  * @returns {THREE.Material} El material encontrado o creado.
  */
+/**
+ * Crea un material buscándolo en la librería o usando un color simple.
+ * @param {object} params - Parámetros del material desde el JSON.
+ * @returns {THREE.Material} El material encontrado o creado.
+ */
 function createMaterial(params) {
-    const safeParams = params || {};
+    // ---- INICIO DE LA CORRECCIÓN ----
+    // 1. Añadir una guarda para parámetros nulos o indefinidos.
+    // Si el JSON tiene "material": null, esta línea lo captura y devuelve un material de error visible.
+    if (!params) {
+        console.warn("Se intentó crear un material con datos nulos. Se usará un material de emergencia fucsia.");
+        return new THREE.MeshStandardMaterial({ color: '#FF00FF' });
+    }
+    // ---- FIN DE LA CORRECCIÓN ----
 
-    // PRIMERO: Busca una referencia a la librería
+    const safeParams = params; // Ya no se necesita el `|| {}`
+
     if (safeParams.materialRef) {
         if (MATERIAL_LIBRARY[safeParams.materialRef]) {
-            // ¡Encontrado! Devuelve el material pre-generado. Es instantáneo.
             return MATERIAL_LIBRARY[safeParams.materialRef];
         } else {
-            // Si no se encuentra, devuelve un material de error para que sea obvio.
             console.warn(`El material '${safeParams.materialRef}' no existe en la librería.`);
-            return new THREE.MeshStandardMaterial({ color: '#FF00FF' }); // Fucsia de error
+            return new THREE.MeshStandardMaterial({ color: '#FF00FF' });
         }
     }
 
-    // SEGUNDO: Si no hay referencia, usa la lógica anterior para colores, texturas URL, etc.
-    // (Esto mantiene la flexibilidad por si quieres usar un color simple)
     const materialType = safeParams.type ? safeParams.type.toLowerCase() : 'standard';
-    const materialParams = { ...safeParams };
-    delete materialParams.type;
 
-    for (const key of ['map', 'normalMap']) { // ... etc.
+    // ---- INICIO DE LA CORRECCIÓN ----
+    // 2. Crear un objeto de parámetros "limpio", ignorando cualquier propiedad que sea `null`.
+    // Esto evita pasar algo como `{ vertexShader: null }` al constructor de Three.js.
+    const materialParams = {};
+    for (const key in safeParams) {
+        if (Object.prototype.hasOwnProperty.call(safeParams, key) && safeParams[key] !== null && key !== 'type') {
+            materialParams[key] = safeParams[key];
+        }
+    }
+    // ---- FIN DE LA CORRECCIÓN ----
+
+    // El resto del código permanece igual, pero ahora opera sobre el `materialParams` limpio.
+    for (const key of ['map', 'normalMap']) {
         if (typeof materialParams[key] === 'string') {
             materialParams[key] = textureLoader.load(materialParams[key]);
         }
@@ -114,7 +133,6 @@ function createMaterial(params) {
         case 'standard': default: return new THREE.MeshStandardMaterial(materialParams);
     }
 }
-
 function parseObject(objData) {
     if (!objData) return null;
 

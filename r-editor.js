@@ -1,31 +1,28 @@
 // =======================================================================
-// === LÓGICA DEL EDITOR (UI, EVENTOS E INICIALIZACIÓN) ==================
+// === LÓGICA DEL EDITOR HÍBRIDO 2D/3D (UI, EVENTOS E INICIALIZACIÓN) ====
 // =======================================================================
 
 // Estado actual del editor
-let activeTool = { type: 'texture', id: 'grass' };
-let currentZoom = 1.0;
-const WORLD_DATA_NAME_PREFIX = 'Mundo - '; // Prefijo para los nombres de datos de mundos
+let activeTool = { category: 'texture', id: 'grass' };
+const WORLD_DATA_NAME_PREFIX = 'Mundo - ';
 let editorState = {
-    isPickingCoordinate: false, // ¿Estamos esperando un clic en el mapa?
-    entityBeingEdited: null,    // ¿Qué objeto del mapa estábamos editando?
+    isPickingCoordinate: false,
+    entityBeingEdited: null,
 };
+
 // Referencias a los elementos del DOM.
 const editorDOM = {
     mapGridContainer: document.getElementById('r-map-grid-container'),
-    mapGrid: document.getElementById('r-map-grid'),
     texturePalette: document.getElementById('r-texture-palette'),
     entityPalette: document.getElementById('r-entity-palette'),
     previewButton: document.getElementById('r-preview-button'),
     saveButton: document.getElementById('r-save-button'),
-    exportHtmlButton: document.getElementById('r-export-html-button'),
     loadWorldSelect: document.getElementById('r-load-world-select'),
     saveToCharacterButton: document.getElementById('r-save-to-character-btn'),
     previewModal: document.getElementById('r-preview-modal'),
     previewModalCloseBtn: document.querySelector('#r-preview-modal .modal-close-button1'),
     zoomInButton: document.getElementById('r-zoom-in-button'),
     zoomOutButton: document.getElementById('r-zoom-out-button'),
-    importCharacterButton: document.getElementById('r-import-character-button'),
     characterModal: document.getElementById('r-character-modal-overlay'),
     characterModalCloseBtn: document.querySelector('#r-character-modal-overlay .character-modal-close-button'),
     characterGrid: document.getElementById('r-character-grid'),
@@ -34,35 +31,34 @@ const editorDOM = {
     editEntitySaveBtn: document.getElementById('r-edit-entity-save-btn'),
     editEntityNameSpan: document.getElementById('r-edit-entity-name'),
     editColisionTipoSelect: document.getElementById('edit-colision-tipo'),
-    
+};
+
+// Estado para el visor 3D del editor
+let editor3DState = {
+    isActive: false,
+    scene: null,
+    camera: null,
+    renderer: null,
+    controls: null,
+    placeableObjects: new THREE.Group(),
+    groundObjects: [],
+    gridHelper: null
 };
 
 let selectedAvatarKey = null;
 
-// --- AÑADIR ESTA FUNCIÓN COMPLETA ---
-// Abre el modal y lo llena con los modelos 3D de la paleta.
+// --- FUNCIONES ORIGINALES PRESERVADAS ---
+
 async function openAvatarSelectionModal() {
     const avatarGrid = document.getElementById('r-avatar-grid');
-    avatarGrid.innerHTML = ''; // Limpiar contenido anterior
-
-    // Recorremos las entidades personalizadas (cargadas desde "Datos")
+    avatarGrid.innerHTML = '';
     for (const toolId in tools.customEntities) {
         const tool = tools.customEntities[toolId];
-        
-        // Solo nos interesan los modelos 3D
         if (tool.modelType === 'json3d') {
             const btn = document.createElement('button');
             btn.className = 'palette-item';
-            
             const previewSrc = await generate3DPreview(tool.icon);
-            btn.innerHTML = `
-                <div class="palette-item-preview">
-                    <img src="${previewSrc}" alt="${tool.name}">
-                </div>
-                <span>${tool.name}</span>
-            `;
-            
-            // Al hacer clic, guarda la clave del modelo y cierra el modal
+            btn.innerHTML = `<div class="palette-item-preview"><img src="${previewSrc}" alt="${tool.name}"></div><span>${tool.name}</span>`;
             btn.onclick = () => {
                 selectedAvatarKey = toolId;
                 document.getElementById('r-avatar-modal').style.display = 'none';
@@ -71,160 +67,7 @@ async function openAvatarSelectionModal() {
             avatarGrid.appendChild(btn);
         }
     }
-
     document.getElementById('r-avatar-modal').style.display = 'flex';
-}
-
-
-function renderGrid() {
-    editorDOM.mapGrid.innerHTML = '';
-    editorDOM.mapGrid.style.gridTemplateColumns = `repeat(${GRID_WIDTH}, 1fr)`;
-
-    for (let z = 0; z < GRID_HEIGHT; z++) {
-        for (let x = 0; x < GRID_WIDTH; x++) {
-            const chunkId = `${x}_${z}`;
-            const chunkCell = document.createElement('div');
-            chunkCell.classList.add('grid-cell');
-            chunkCell.dataset.chunkId = chunkId;
-
-            if (!worldData.chunks[chunkId]) {
-                worldData.chunks[chunkId] = { groundTextureKey: 'empty', objects: [] };
-            }
-            const chunk = worldData.chunks[chunkId];
-            chunkCell.classList.add(`texture-${chunk.groundTextureKey || 'empty'}`);
-
-            // --- CAMBIO CLAVE: HEMOS ELIMINADO EL BUCLE QUE CREABA LAS SUB-CELDAS ---
-            // Ya no se dibujará la rejilla interna, solo la losa principal.
-
-            // El renderizado de entidades con posición absoluta sigue funcionando igual
-            chunk.objects.forEach(entity => {
-                const marker = document.createElement('div');
-                marker.className = 'entity-marker';
-                
-                marker.style.left = `${(entity.x / CHUNK_SIZE) * 100}%`;
-                marker.style.top = `${(entity.z / CHUNK_SIZE) * 100}%`;
-
-                const entityData = tools.entities[entity.type] || tools.customEntities[entity.type];
-
-                if (entityData) {
-                    if (entityData.modelType === 'json3d') {
-                        marker.innerHTML = '🧊';
-                        marker.title = entityData.name;
-                    } else if (entityData.icon) {
-                        marker.innerHTML = `<img src="${entityData.icon}" alt="${entityData.name}">`;
-                    } else {
-                        marker.innerHTML = '❓';
-                    }
-                } else {
-                    marker.innerHTML = '❓';
-                }
-                chunkCell.appendChild(marker);
-            });
-
-            // La lógica para el punto de inicio del jugador se mantiene
-            const playerStart = worldData.metadata.playerStartPosition;
-            if (playerStart && playerStart.chunkX === x && playerStart.chunkZ === z) {
-                const marker = document.createElement('div');
-                marker.className = 'entity-marker';
-                marker.style.left = `${(playerStart.subX / SUBGRID_SIZE) * 100}%`;
-                marker.style.top = `${(playerStart.subZ / SUBGRID_SIZE) * 100}%`;
-                marker.innerHTML = tools.entities.playerStart.icon;
-                chunkCell.appendChild(marker);
-            }
-            
-            editorDOM.mapGrid.appendChild(chunkCell);
-        }
-    }
-}
- 
-
-function handleGridClick(event) {
-    if (event.button !== 0) return;
-    
-    // -- CAMBIO CLAVE: El objetivo ahora es el chunk, no la sub-celda --
-    const chunkCell = event.target.closest('.grid-cell');
-    if (!chunkCell) return;
-
-    const chunkId = chunkCell.dataset.chunkId;
-    const [chunkX, chunkZ] = chunkId.split('_').map(Number);
-    const chunk = worldData.chunks[chunkId];
-
-    // Lógica para el modo "Seleccionar Coordenada" (se mantiene igual)
-    if (editorState.isPickingCoordinate) {
-        // ... (Tu lógica existente para seleccionar coordenadas de movimiento puede quedar aquí sin cambios)
-        return;
-    }
-
-    // Obtenemos las coordenadas del clic RELATIVAS al chunk
-    const rect = chunkCell.getBoundingClientRect();
-    const clickX_pixels = event.clientX - rect.left;
-    const clickZ_pixels = event.clientY - rect.top;
-
-    // Convertimos las coordenadas de píxeles a unidades del juego (de 0 a CHUNK_SIZE)
-    const posX_in_chunk = (clickX_pixels / chunkCell.clientWidth) * CHUNK_SIZE;
-    const posZ_in_chunk = (clickZ_pixels / chunkCell.clientHeight) * CHUNK_SIZE;
-
-    // Revisamos si ya hay un objeto muy cerca para abrir el editor
-    const CLICK_RADIUS = SUB_CELL_SIZE / 2; // Radio para detectar clic en objeto existente
-    const existingObject = chunk.objects.find(obj => {
-        const dist = Math.sqrt(Math.pow(obj.x - posX_in_chunk, 2) + Math.pow(obj.z - posZ_in_chunk, 2));
-        return dist < CLICK_RADIUS;
-    });
-
-    if (existingObject && activeTool.id !== 'eraser') {
-        openEntityEditorModal(existingObject);
-        return;
-    }
-    if (activeTool.id === 'selector') {
-            return; // Si es el selector y no hemos clicado en nada, no hagas nada.
-        }
-
-
-
-        
-    // Si la herramienta activa es de textura, pintamos el suelo como antes.
-    if (activeTool.category === 'texture') {
-        chunk.groundTextureKey = activeTool.id;
-        renderGrid(); // Volvemos a dibujar para que se vea el cambio de color
-        return;
-    }
-    
-    // Si es una entidad, la colocamos en la posición exacta
-    if (activeTool.category === 'entity' || activeTool.category === 'customEntity') {
-        if (activeTool.id === 'eraser') {
-            // La goma de borrar ahora elimina el objeto más cercano al clic
-            if (existingObject) {
-                const index = chunk.objects.indexOf(existingObject);
-                chunk.objects.splice(index, 1);
-                renderGrid();
-            }
-            return;
-        }
-
-        if (activeTool.id === 'playerStart') {
-            // El inicio del jugador sigue necesitando sub-celdas por ahora, lo simplificamos
-            worldData.metadata.playerStartPosition = { chunkX, chunkZ, subX: Math.floor(posX_in_chunk / SUB_CELL_SIZE), subZ: Math.floor(posZ_in_chunk / SUB_CELL_SIZE) };
-        } else {
-            // -- CAMBIO CLAVE EN LA ESTRUCTURA DE DATOS --
-            // Ya no usamos subX/subZ, usamos las coordenadas libres x/z
-            const newObject = { 
-                type: activeTool.id, 
-                x: posX_in_chunk, 
-                z: posZ_in_chunk 
-            };
-
-            if (activeTool.category === 'customEntity') {
-                const toolData = tools.customEntities[activeTool.id];
-                if (toolData) {
-                    newObject.dataRef = toolData.dataRef;
-                    newObject.modelType = toolData.modelType;
-                }
-            }
-            chunk.objects.push(newObject);
-        }
-    }
-    
-    renderGrid();
 }
 
 function findDatoElementByName(name) {
@@ -242,18 +85,14 @@ function openEntityEditorModal(entity) {
         alert("Este objeto no es personalizable (no proviene de un 'Dato').");
         return;
     }
-
     const datoElement = findDatoElementByName(entity.dataRef);
     if (!datoElement) {
         alert(`No se encontró el "Dato" original llamado "${entity.dataRef}".`);
         return;
     }
-
     editorState.entityBeingEdited = entity;
-
     const props = procesarPropiedadesVideojuego(datoElement);
     renderizarRutaMovimiento(props.movimiento || []);
-    
     editorDOM.editEntityNameSpan.textContent = entity.dataRef;
     document.getElementById('edit-tamano-x').value = props.tamano?.x || 1;
     document.getElementById('edit-tamano-y').value = props.tamano?.y || 1.8;
@@ -264,9 +103,7 @@ function openEntityEditorModal(entity) {
     document.getElementById('edit-colision-tipo').value = props.colision?.tipo || 'ninguna';
     document.getElementById('edit-colision-radio').value = props.colision?.radio || 0.5;
     document.getElementById('edit-colision-altura').value = props.colision?.altura || 1.8;
-    
     updateCollisionFieldsVisibility();
-
     editorDOM.editEntityModal.dataset.editingDatoName = entity.dataRef;
     editorDOM.editEntityModal.style.display = 'flex';
 }
@@ -274,13 +111,11 @@ function openEntityEditorModal(entity) {
 function saveEntityProperties() {
     const datoName = editorDOM.editEntityModal.dataset.editingDatoName;
     if (!datoName) return;
-
     const datoElement = findDatoElementByName(datoName);
     if (!datoElement) {
         alert("Error: Se perdió la referencia al 'Dato' original.");
         return;
     }
-
     const newProps = {
         tamano: {
             x: parseFloat(document.getElementById('edit-tamano-x').value),
@@ -297,198 +132,368 @@ function saveEntityProperties() {
         },
         movimiento: []
     };
-    
     const pasos = document.querySelectorAll('#edit-movimiento-lista .ruta-paso');
     pasos.forEach(pasoEl => {
-        const pasoData = {
-            tipo: pasoEl.dataset.tipo,
-        };
+        const pasoData = { tipo: pasoEl.dataset.tipo };
         if (pasoData.tipo === 'aleatorio') {
             pasoData.duracion = pasoEl.dataset.duracion === 'null' ? null : parseFloat(pasoEl.dataset.duracion);
         } else if (pasoData.tipo === 'ir_a') {
-            pasoData.coordenadas = {
-                x: parseFloat(pasoEl.dataset.x),
-                z: parseFloat(pasoEl.dataset.z)
-            };
+            pasoData.coordenadas = { x: parseFloat(pasoEl.dataset.x), z: parseFloat(pasoEl.dataset.z) };
         }
         newProps.movimiento.push(pasoData);
     });
-
     const KEYWORD = 'Videojuego';
     const SEPARATOR = '---';
     const promptVisualTextarea = datoElement.querySelector('.descripcionh');
     const oldText = promptVisualTextarea.value;
-    
     const separatorIndex = oldText.indexOf(SEPARATOR);
     const descriptionText = separatorIndex > -1 ? oldText.substring(separatorIndex) : '';
-
     const newJsonString = JSON.stringify(newProps, null, 2);
     promptVisualTextarea.value = `${KEYWORD}\n${newJsonString}\n\n${descriptionText}`.trim();
-
     alert(`Propiedades de "${datoName}" actualizadas!`);
     editorDOM.editEntityModal.style.display = 'none';
 }
 
-
- 
 function iniciarModoSeleccionCoordenada() {
     if (!editorState.entityBeingEdited) {
         alert("Error: No hay ninguna entidad seleccionada para editar.");
         return;
     }
-    console.log("Iniciando modo de selección de coordenadas...");
     editorState.isPickingCoordinate = true;
     editorDOM.editEntityModal.style.display = 'none';
-    editorDOM.mapGrid.style.cursor = 'crosshair';
+    editorDOM.mapGridContainer.style.cursor = 'crosshair';
 }
- 
-document.addEventListener('DOMContentLoaded', () => {
-    if (!worldData.metadata.playerStartPosition) {
-        console.log("No se encontró una posición de inicio. Estableciendo por defecto en (0,0).");
-        worldData.metadata.playerStartPosition = { chunkX: 0, chunkZ: 0, subX: 0, subZ: 0 };
+
+// --- NUEVA FUNCIÓN PARA RECARGA MANUAL ---
+
+/**
+ * Recarga y vuelve a dibujar manualmente todos los elementos en el canvas del editor 3D.
+ * Útil para forzar una actualización visual después de cargar datos.
+ */
+function cargarcanvas() {
+    console.log("Recarga manual del canvas 3D iniciada...");
+    if (!editor3DState.isActive) {
+        console.warn("El editor 3D no está activo. Intentando inicializar...");
+        initialize3DEditor();
+        return;
     }
+    render3DWorldFromData();
+    console.log("Canvas 3D recargado.");
+}
 
-    populatePalettes();
-    renderGrid();
-    selectTool('texture', 'grass');
-    populateWorldList();
+// --- MOTOR DEL EDITOR 3D ---
 
-    editorDOM.mapGrid.addEventListener('mousedown', handleGridClick);
-    editorDOM.zoomInButton.addEventListener('click', zoomIn);
-    editorDOM.zoomOutButton.addEventListener('click', zoomOut);
-    editorDOM.saveButton.addEventListener('click', saveWorldToCharacter);
-    
-    if (editorDOM.exportHtmlButton) {
-        editorDOM.exportHtmlButton.addEventListener('click', exportStandaloneHTML);
+function initialize3DEditor() {
+    if (editor3DState.isActive) return;
+    const container = editorDOM.mapGridContainer;
+    if (container.clientWidth === 0 || container.clientHeight === 0) {
+        console.warn("El contenedor del editor 3D no tiene dimensiones. Se reintentará.");
+        requestAnimationFrame(initialize3DEditor);
+        return;
     }
-    
-    if (editorDOM.saveToCharacterButton) {
-        editorDOM.saveToCharacterButton.addEventListener('click', saveWorldToCharacter);
+    container.innerHTML = '';
+
+    editor3DState.scene = new THREE.Scene();
+    editor3DState.scene.background = new THREE.Color(0x608da0);
+    editor3DState.scene.fog = new THREE.Fog(0x608da0, 100, 500);
+
+    editor3DState.renderer = new THREE.WebGLRenderer({ antialias: true });
+    editor3DState.renderer.setSize(container.clientWidth, container.clientHeight);
+    editor3DState.renderer.shadowMap.enabled = true;
+    container.appendChild(editor3DState.renderer.domElement);
+
+    const centerX = (GRID_WIDTH * CHUNK_SIZE) / 2;
+    const centerZ = (GRID_HEIGHT * CHUNK_SIZE) / 2;
+    editor3DState.camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 1, 2000);
+    editor3DState.camera.position.set(centerX, 120, centerZ + 80);
+
+    editor3DState.controls = new THREE.OrbitControls(editor3DState.camera, editor3DState.renderer.domElement);
+    editor3DState.controls.target.set(centerX, 0, centerZ);
+    editor3DState.controls.enableDamping = true;
+    editor3DState.controls.dampingFactor = 0.1;
+    editor3DState.controls.screenSpacePanning = false;
+    editor3DState.controls.maxPolarAngle = Math.PI / 2.1;
+
+    editor3DState.scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(150, 200, 100);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.set(2048, 2048);
+    dirLight.shadow.camera.left = -200;
+    dirLight.shadow.camera.right = 200;
+    dirLight.shadow.camera.top = 200;
+    dirLight.shadow.camera.bottom = -200;
+    editor3DState.scene.add(dirLight);
+
+    const gridSize = Math.max(GRID_WIDTH, GRID_HEIGHT) * CHUNK_SIZE;
+    editor3DState.gridHelper = new THREE.GridHelper(gridSize, gridSize / CHUNK_SIZE, 0x000000, 0x888888);
+    editor3DState.gridHelper.position.set(centerX, 0.01, centerZ);
+    editor3DState.scene.add(editor3DState.gridHelper);
+
+    editor3DState.scene.add(editor3DState.placeableObjects);
+    render3DWorldFromData();
+
+    editor3DState.isActive = true;
+    animate3DEditor();
+
+    window.addEventListener('resize', handleEditorResize, false);
+    editor3DState.renderer.domElement.addEventListener('click', handleEditorClick, false);
+    editor3DState.renderer.domElement.addEventListener('contextmenu', handleEditorRightClick, false);
+}
+
+function animate3DEditor() {
+    if (!editor3DState.isActive) return;
+    requestAnimationFrame(animate3DEditor);
+    editor3DState.controls.update();
+    editor3DState.renderer.render(editor3DState.scene, editor3DState.camera);
+}
+
+async function render3DWorldFromData() {
+    while (editor3DState.placeableObjects.children.length > 0) {
+        editor3DState.placeableObjects.remove(editor3DState.placeableObjects.children[0]);
     }
-    editorDOM.previewButton.addEventListener('click', startPreview);
-    editorDOM.previewModalCloseBtn.addEventListener('click', stopPreview);
-    if (editorDOM.loadWorldSelect) {
-        editorDOM.loadWorldSelect.addEventListener('change', (event) => {
-            loadWorldData(event.target.value);
-        });
-        editorDOM.loadWorldSelect.addEventListener('click', populateWorldList);
-    }
+    editor3DState.groundObjects.forEach(ground => editor3DState.scene.remove(ground));
+    editor3DState.groundObjects = [];
 
-    if (editorDOM.editEntityModal) {
-        editorDOM.editEntityCloseBtn.addEventListener('click', () => editorDOM.editEntityModal.style.display = 'none');
-        editorDOM.editEntitySaveBtn.addEventListener('click', saveEntityProperties);
-        editorDOM.editColisionTipoSelect.addEventListener('change', updateCollisionFieldsVisibility);
+    for (const chunkId in worldData.chunks) {
+        const chunk = worldData.chunks[chunkId];
+        if (!chunk || chunk.groundTextureKey === 'empty') continue;
+        const [chunkX, chunkZ] = chunkId.split('_').map(Number);
 
-        const cuboCheckbox = document.getElementById('edit-es-cubo-3d');
-        const cilindroCheckbox = document.getElementById('edit-es-cilindro-3d');
+        const textureData = tools.textures[chunk.groundTextureKey] || { material: { materialRef: 'terreno_cesped' } };
+        const groundMaterial = createMaterial(textureData.material);
+        if (groundMaterial.isMeshStandardMaterial) groundMaterial.roughness = 0.9;
 
-        cuboCheckbox.addEventListener('change', () => {
-            if (cuboCheckbox.checked) {
-                cilindroCheckbox.checked = false;
+        const groundGeometry = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
+        const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+        groundMesh.rotation.x = -Math.PI / 2;
+        groundMesh.position.set(chunkX * CHUNK_SIZE + CHUNK_SIZE / 2, 0, chunkZ * CHUNK_SIZE + CHUNK_SIZE / 2);
+        groundMesh.receiveShadow = true;
+        editor3DState.scene.add(groundMesh);
+        editor3DState.groundObjects.push(groundMesh);
+
+        for (const obj of chunk.objects) {
+            const entityData = tools.customEntities[obj.type] || tools.entities[obj.type];
+            if (!entityData) continue;
+
+            let modelObject = null;
+            if (entityData.modelType === 'json3d' && entityData.icon) {
+                modelObject = createModelFromJSON(entityData.icon);
+            } else if (entityData.modelType === 'sprite') {
+                const iconSrc = findCharacterImageSrc(obj.dataRef) || entityData.icon;
+                if (iconSrc) {
+                    const map = new THREE.TextureLoader().load(iconSrc);
+                    const material = new THREE.SpriteMaterial({ map, transparent: true, alphaTest: 0.1 });
+                    const sprite = new THREE.Sprite(material);
+                    const gameProps = (entityData.gameProps) ? entityData.gameProps : { tamano: { x: 3, y: 4.8 } };
+                    sprite.scale.set(gameProps.tamano.x, gameProps.tamano.y, 1);
+                    modelObject = sprite;
+                }
+            } else if (entityData.model) {
+                modelObject = createModelFromJSON(entityData.model);
             }
-        });
 
-        cilindroCheckbox.addEventListener('change', () => {
-            if (cilindroCheckbox.checked) {
-                cuboCheckbox.checked = false;
+            if (modelObject) {
+                const objX = (chunkX * CHUNK_SIZE) + obj.x;
+                const objZ = (chunkZ * CHUNK_SIZE) + obj.z;
+                const box = new THREE.Box3().setFromObject(modelObject);
+                const size = box.getSize(new THREE.Vector3());
+                const yOffset = modelObject.isSprite ? size.y / 2 : -box.min.y;
+                modelObject.position.set(objX, yOffset, objZ);
+                modelObject.castShadow = true;
+                modelObject.userData.sourceObject = obj;
+                editor3DState.placeableObjects.add(modelObject);
             }
-        });
-    }
-    
-    const btnAnadirAleatorio = document.getElementById('movimiento-anadir-aleatorio-btn');
-    const btnSeleccionarCoord = document.getElementById('movimiento-seleccionar-coord-btn');
-    const paramsAleatorioContainer = document.getElementById('movimiento-params-aleatorio');
-    const btnConfirmarAleatorio = document.getElementById('movimiento-confirmar-aleatorio-btn');
-
-    if (btnAnadirAleatorio) {
-        btnAnadirAleatorio.addEventListener('click', () => {
-            paramsAleatorioContainer.style.display = 'block';
-        });
+        }
     }
 
-    if (btnSeleccionarCoord) {
-        btnSeleccionarCoord.addEventListener('click', iniciarModoSeleccionCoordenada);
+    const playerStart = worldData.metadata.playerStartPosition;
+    if (playerStart) {
+        const startX = (playerStart.chunkX * CHUNK_SIZE) + (playerStart.subX * (CHUNK_SIZE / SUBGRID_SIZE)) + ((CHUNK_SIZE / SUBGRID_SIZE) / 2);
+        const startZ = (playerStart.chunkZ * CHUNK_SIZE) + (playerStart.subZ * (CHUNK_SIZE / SUBGRID_SIZE)) + ((CHUNK_SIZE / SUBGRID_SIZE) / 2);
+        const startMarkerGeo = new THREE.ConeGeometry(1.5, 4, 12);
+        const startMarkerMat = new THREE.MeshLambertMaterial({ color: 0xff4444 });
+        const startMarker = new THREE.Mesh(startMarkerGeo, startMarkerMat);
+        startMarker.position.set(startX, 2, startZ);
+        editor3DState.placeableObjects.add(startMarker);
     }
+}
 
-    if (btnConfirmarAleatorio) {
-        btnConfirmarAleatorio.addEventListener('click', () => {
-            paramsAleatorioContainer.style.display = 'none';
+function handleEditorResize() {
+    if (!editor3DState.isActive) return;
+    const container = editorDOM.mapGridContainer;
+    editor3DState.camera.aspect = container.clientWidth / container.clientHeight;
+    editor3DState.camera.updateProjectionMatrix();
+    editor3DState.renderer.setSize(container.clientWidth, container.clientHeight);
+}
+
+function handleEditorClick(event) {
+    if (event.button !== 0) return;
+
+    if (editorState.isPickingCoordinate) {
+        const rect = editorDOM.mapGridContainer.getBoundingClientRect();
+        const mouse = new THREE.Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, editor3DState.camera);
+        const intersects = raycaster.intersectObjects(editor3DState.groundObjects);
+        if (intersects.length > 0) {
+            const point = intersects[0].point;
+            const nuevoPaso = { tipo: 'ir_a', coordenadas: { x: point.x, z: point.z } };
             const listaEl = document.getElementById('edit-movimiento-lista');
             let rutaActual = [];
-            const pasosActuales = listaEl.querySelectorAll('.ruta-paso');
-            pasosActuales.forEach(pasoEl => {
+            listaEl.querySelectorAll('.ruta-paso').forEach(pasoEl => {
                 const pasoData = { tipo: pasoEl.dataset.tipo };
                 if (pasoData.tipo === 'aleatorio') pasoData.duracion = pasoEl.dataset.duracion === 'null' ? null : parseFloat(pasoEl.dataset.duracion);
                 else if (pasoData.tipo === 'ir_a') pasoData.coordenadas = { x: parseFloat(pasoEl.dataset.x), z: parseFloat(pasoEl.dataset.z) };
                 rutaActual.push(pasoData);
             });
-
-            const duracionInput = document.getElementById('movimiento-duracion-nuevo');
-            const nuevoPaso = { 
-                tipo: 'aleatorio',
-                duracion: duracionInput.value ? parseFloat(duracionInput.value) : null 
-            };
-            
             rutaActual.push(nuevoPaso);
             renderizarRutaMovimiento(rutaActual);
-        });
+            editorState.isPickingCoordinate = false;
+            editorDOM.mapGridContainer.style.cursor = 'default';
+            editorDOM.editEntityModal.style.display = 'flex';
+        }
+        return;
     }
-});
 
+    const container = editorDOM.mapGridContainer;
+    const rect = container.getBoundingClientRect();
+    const mouse = new THREE.Vector2(((event.clientX - rect.left) / container.clientWidth) * 2 - 1, -((event.clientY - rect.top) / container.clientHeight) * 2 + 1);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, editor3DState.camera);
+    const intersects = raycaster.intersectObjects(editor3DState.groundObjects);
 
+    if (intersects.length > 0) {
+        const point = intersects[0].point;
+        const chunkX = Math.floor(point.x / CHUNK_SIZE);
+        const chunkZ = Math.floor(point.z / CHUNK_SIZE);
+        const chunkId = `${chunkX}_${chunkZ}`;
+        if (!worldData.chunks[chunkId]) {
+            worldData.chunks[chunkId] = { groundTextureKey: 'grass', objects: [] };
+        }
+        const chunk = worldData.chunks[chunkId];
+        const posX_in_chunk = point.x - (chunkX * CHUNK_SIZE);
+        const posZ_in_chunk = point.z - (chunkZ * CHUNK_SIZE);
 
-
-
-
-document.addEventListener('DOMContentLoaded', async () => {
-    await populatePalettes();
-    renderGrid();
-    selectTool('texture', 'grass');
-    populateWorldList();
-
-    editorDOM.mapGrid.addEventListener('mousedown', handleGridClick);
-    editorDOM.zoomInButton.addEventListener('click', zoomIn);
-    if (editorDOM.editEntityModal) {
-        editorDOM.editEntityCloseBtn.addEventListener('click', () => editorDOM.editEntityModal.style.display = 'none');
-        editorDOM.editEntitySaveBtn.addEventListener('click', saveEntityProperties);
-        editorDOM.editColisionTipoSelect.addEventListener('change', updateCollisionFieldsVisibility);
-        
+        if (activeTool.category === 'texture') {
+            chunk.groundTextureKey = activeTool.id;
+        } else if (activeTool.category === 'entity' || activeTool.category === 'customEntity') {
+            if (activeTool.id === 'eraser') {
+                let closestObject = null;
+                let minDistance = 2;
+                chunk.objects.forEach(obj => {
+                    const distance = Math.hypot(obj.x - posX_in_chunk, obj.z - posZ_in_chunk);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestObject = obj;
+                    }
+                });
+                if (closestObject) {
+                    chunk.objects.splice(chunk.objects.indexOf(closestObject), 1);
+                }
+            } else if (activeTool.id === 'playerStart') {
+                worldData.metadata.playerStartPosition = {
+                    chunkX,
+                    chunkZ,
+                    subX: Math.floor(posX_in_chunk / (CHUNK_SIZE / SUBGRID_SIZE)),
+                    subZ: Math.floor(posZ_in_chunk / (CHUNK_SIZE / SUBGRID_SIZE))
+                };
+            } else if (activeTool.id !== 'selector') {
+                const newObject = { type: activeTool.id, x: posX_in_chunk, z: posZ_in_chunk };
+                if (activeTool.category === 'customEntity') {
+                    newObject.dataRef = tools.customEntities[activeTool.id].dataRef;
+                }
+                chunk.objects.push(newObject);
+            }
+        }
+        render3DWorldFromData();
     }
-});
+}
+
+function handleEditorRightClick(event) {
+    event.preventDefault();
+    if (activeTool.id !== 'selector') return;
+    const container = editorDOM.mapGridContainer;
+    const rect = container.getBoundingClientRect();
+    const mouse = new THREE.Vector2(((event.clientX - rect.left) / container.clientWidth) * 2 - 1, -((event.clientY - rect.top) / container.clientHeight) * 2 + 1);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, editor3DState.camera);
+    const intersects = raycaster.intersectObjects(editor3DState.placeableObjects.children, true);
+    if (intersects.length > 0) {
+        let mainParent = intersects[0].object;
+        while (mainParent.parent && mainParent.parent !== editor3DState.placeableObjects) {
+            mainParent = mainParent.parent;
+        }
+        if (mainParent.userData.sourceObject) {
+            openEntityEditorModal(mainParent.userData.sourceObject);
+        }
+    }
+}
 
 function selectTool(category, id) {
     activeTool = { category, id };
     document.querySelectorAll('.palette-item.selected').forEach(el => el.classList.remove('selected'));
-    document.querySelector(`.palette-item[data-id='${id}']`).classList.add('selected');
+    const toolElement = document.querySelector(`.palette-item[data-id='${id}']`);
+    if (toolElement) toolElement.classList.add('selected');
+    editorDOM.mapGridContainer.style.cursor = (id === 'selector') ? 'pointer' : 'crosshair';
 }
 
-const ZOOM_STEP = 0.2;
-const MAX_ZOOM = 5.0;
-const MIN_ZOOM = 0.2;
-const PanningState = { isPanning: false, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0, };
+function zoomIn() {
+    if (editor3DState.isActive) editor3DState.controls.dollyIn(1.2);
+}
 
-function applyZoom() { const container = editorDOM.mapGridContainer; const scrollLeft = container.scrollLeft; const scrollTop = container.scrollTop; const containerWidth = container.clientWidth; const containerHeight = container.clientHeight; const originX = scrollLeft + containerWidth / 2; const originY = scrollTop + containerHeight / 2; editorDOM.mapGrid.style.transformOrigin = `${originX}px ${originY}px`; editorDOM.mapGrid.style.transform = `scale(${currentZoom})`; }
-function zoomIn() { currentZoom = Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP); applyZoom(); }
-function zoomOut() { currentZoom = Math.max(MIN_ZOOM, currentZoom - ZOOM_STEP); applyZoom(); }
-function startPanning(event) { if (event.button !== 1) return; event.preventDefault(); const container = editorDOM.mapGridContainer; PanningState.isPanning = true; PanningState.startX = event.pageX - container.offsetLeft; PanningState.startY = event.pageY - container.offsetTop; PanningState.scrollLeft = container.scrollLeft; PanningState.scrollTop = container.scrollTop; container.style.cursor = 'grabbing'; container.style.userSelect = 'none'; }
-function stopPanning() { if (!PanningState.isPanning) return; PanningState.isPanning = false; const container = editorDOM.mapGridContainer; container.style.cursor = 'grab'; container.style.removeProperty('user-select'); }
-function doPanning(event) { if (!PanningState.isPanning) return; event.preventDefault(); const container = editorDOM.mapGridContainer; const x = event.pageX - container.offsetLeft; const y = event.pageY - container.offsetTop; const walkX = (x - PanningState.startX); const walkY = (y - PanningState.startY); container.scrollLeft = PanningState.scrollLeft - walkX; container.scrollTop = PanningState.scrollTop - walkY; }
+function zoomOut() {
+    if (editor3DState.isActive) editor3DState.controls.dollyOut(1.2);
+}
 
-// **MODIFICADO**: Ahora detecta modelos 3D en el 'promptVisual'
-function openCharacterModal() { editorDOM.characterGrid.innerHTML = ''; const modalTitle = editorDOM.characterModal.querySelector('h3'); if(modalTitle) { modalTitle.textContent = 'Selecciona un Dato para Importar'; } const characterDataElements = document.querySelectorAll('#listapersonajes .personaje'); characterDataElements.forEach(charElement => { const nombre = charElement.querySelector('.nombreh')?.value; if (!nombre) return; const promptVisualText = charElement.querySelector('.prompt-visualh')?.value; let isJsonModel = false; let jsonData = null; if (promptVisualText) { try { const parsed = JSON.parse(promptVisualText); if (parsed && typeof parsed === 'object' && (Array.isArray(parsed.parts) || Array.isArray(parsed.objects))) { isJsonModel = true; jsonData = parsed; } } catch (e) {} } const item = document.createElement('div'); item.className = 'character-grid-item'; item.dataset.name = nombre; if (isJsonModel) { item.dataset.type = 'json3d'; item.dataset.modelData = JSON.stringify(jsonData); item.innerHTML = `<div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 40px;">🧊</div><span>${nombre}</span>`; item.onclick = importCharacterAsTool; editorDOM.characterGrid.appendChild(item); } else { const imagenSrc = charElement.querySelector('.personaje-visual img')?.src; if (imagenSrc && !imagenSrc.endsWith('/')) { item.dataset.type = 'sprite'; item.dataset.imgSrc = imagenSrc; item.innerHTML = `<img src="${imagenSrc}" alt="${nombre}"><span>${nombre}</span>`; item.onclick = importCharacterAsTool; editorDOM.characterGrid.appendChild(item); } } }); editorDOM.characterModal.style.display = 'flex'; }
-function closeCharacterModal() { editorDOM.characterModal.style.display = 'none'; }
+function findCharacterImageSrc(dataRefName) {
+    const allCharacters = document.querySelectorAll('#listapersonajes .personaje');
+    for (const charElement of allCharacters) {
+        const nameInput = charElement.querySelector('.nombreh');
+        if (nameInput && nameInput.value === dataRefName) {
+            const imgElement = charElement.querySelector('.personaje-visual img');
+            if (imgElement && imgElement.src) return imgElement.src;
+        }
+    }
+    return null;
+}
 
+// --- INICIALIZACIÓN Y EVENT LISTENERS (CORREGIDO) ---
 
+document.addEventListener('DOMContentLoaded', async () => {
+    // Inicialización de datos del mundo
+    if (Object.keys(worldData.chunks).length === 0) {
+        for (let x = 0; x < GRID_WIDTH; x++) {
+            for (let z = 0; z < GRID_HEIGHT; z++) {
+                worldData.chunks[`${x}_${z}`] = { groundTextureKey: 'grass', objects: [] };
+            }
+        }
+    }
+    if (!worldData.metadata.playerStartPosition) {
+        worldData.metadata.playerStartPosition = { chunkX: Math.floor(GRID_WIDTH/2), chunkZ: Math.floor(GRID_HEIGHT/2), subX: 0, subZ: 0 };
+    }
 
-document.addEventListener('DOMContentLoaded', () => {
-    populatePalettes();
-    renderGrid();
+    // Poblar UI y configurar estado inicial
+    await populatePalettes();
     selectTool('texture', 'grass');
     populateWorldList();
-  document.getElementById('r-avatar-modal-close-btn').addEventListener('click', () => {
-        document.getElementById('r-avatar-modal').style.display = 'none';
+
+    // Observador para inicializar el editor 3D solo cuando sea visible
+    const renderizadorEl = document.getElementById('renderizador');
+    const observer = new MutationObserver((mutations) => {
+        for (let mutation of mutations) {
+            if (mutation.attributeName === 'style') {
+                const isVisible = renderizadorEl.style.display !== 'none';
+                if (isVisible && !editor3DState.isActive) {
+                    console.log("El editor se ha hecho visible. Inicializando Three.js...");
+                    initialize3DEditor();
+                }
+            }
+        }
     });
-    editorDOM.mapGrid.addEventListener('mousedown', handleGridClick);
+    observer.observe(renderizadorEl, { attributes: true });
+
+    // Listeners de botones principales
     editorDOM.zoomInButton.addEventListener('click', zoomIn);
     editorDOM.zoomOutButton.addEventListener('click', zoomOut);
     editorDOM.saveButton.addEventListener('click', saveWorldToCharacter);
@@ -496,51 +501,32 @@ document.addEventListener('DOMContentLoaded', () => {
         editorDOM.saveToCharacterButton.addEventListener('click', saveWorldToCharacter);
     }
     editorDOM.previewButton.addEventListener('click', startPreview);
-    
     editorDOM.previewModalCloseBtn.addEventListener('click', stopPreview);
-    
+
+    // --- CAMBIO CLAVE: Listener de carga de mundo corregido ---
     if (editorDOM.loadWorldSelect) {
-        editorDOM.loadWorldSelect.addEventListener('change', (event) => {
-            loadWorldData(event.target.value);
+        editorDOM.loadWorldSelect.addEventListener('change', async (event) => {
+            await loadWorldData(event.target.value); // Espera a que la carga y la paleta se actualicen
+            render3DWorldFromData(); // Renderiza DESPUÉS de que todo esté listo
         });
         editorDOM.loadWorldSelect.addEventListener('click', populateWorldList);
     }
-    if (editorDOM.importCharacterButton) {
-        editorDOM.importCharacterButton.addEventListener('click', openCharacterModal);
+
+    if (editorDOM.editEntityModal) {
+        editorDOM.editEntityCloseBtn.addEventListener('click', () => editorDOM.editEntityModal.style.display = 'none');
+        editorDOM.editEntitySaveBtn.addEventListener('click', saveEntityProperties);
+        editorDOM.editColisionTipoSelect.addEventListener('change', updateCollisionFieldsVisibility);
+        const cuboCheckbox = document.getElementById('edit-es-cubo-3d');
+        const cilindroCheckbox = document.getElementById('edit-es-cilindro-3d');
+        cuboCheckbox.addEventListener('change', () => { if (cuboCheckbox.checked) cilindroCheckbox.checked = false; });
+        cilindroCheckbox.addEventListener('change', () => { if (cilindroCheckbox.checked) cuboCheckbox.checked = false; });
+        
+        document.getElementById('movimiento-seleccionar-coord-btn').addEventListener('click', iniciarModoSeleccionCoordenada);
     }
-    if (editorDOM.characterModalCloseBtn) {
-        editorDOM.characterModalCloseBtn.addEventListener('click', closeCharacterModal);
+
+    if (document.getElementById('r-avatar-modal-close-btn')) {
+        document.getElementById('r-avatar-modal-close-btn').addEventListener('click', () => {
+            document.getElementById('r-avatar-modal').style.display = 'none';
+        });
     }
-    const container = editorDOM.mapGridContainer;
-    container.addEventListener('mousedown', startPanning);
-    container.addEventListener('mouseup', stopPanning);
-    container.addEventListener('mouseleave', stopPanning);
-    container.addEventListener('mousemove', doPanning);
-    
 });
-
-window.addEventListener('load', () => {
-    let attempts = 0;
-    const maxAttempts = 20;
-
-    const tryLoadAssets = () => {
-        const characterDataElements = document.querySelectorAll('#listapersonajes .personaje');
-        const videoGameAssets = Array.from(characterDataElements).filter(el => el.querySelector('.change-arc-btn')?.dataset.arco === 'videojuego');
-
-        if (videoGameAssets.length > 0 && videoGameAssets.every(el => el.querySelector('.personaje-visual img')?.complete)) {
-            console.log("Assets de 'Videojuego' listos. Cargando en la paleta...");
-            autoLoadGameAssets();
-                 renderizarPreviewsInicialesDeDatos();
-        } else if (attempts < maxAttempts) {
-            attempts++;
-            setTimeout(tryLoadAssets, 500);
-        } else {
-            console.warn("No se pudieron cargar automáticamente los assets de 'Videojuego' después de varios intentos.");
-        }
-    };
-
-    tryLoadAssets();
-});
-
-
- 
