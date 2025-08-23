@@ -1,25 +1,31 @@
-async function generate3DPreview(modelJson, size = 450) {
-    // 1. Verificación de dependencias
+let previewRenderer = null; 
+
+ async function generate3DPreview(modelJson, size = 450) {
+    // 1. Verificación de dependencias (sin cambios)
     if (typeof THREE === 'undefined' || typeof createModelFromJSON === 'undefined') {
         console.error("Error Crítico: generate3DPreview no puede funcionar sin THREE.js y la función global createModelFromJSON.");
         return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="40">⚠️</text></svg>';
     }
 
-    // 2. Creación de la escena y el renderizador
+    // ---- INICIO DE LA CORRECCIÓN ----
+    // 2. Creación o reutilización del renderizador
+    if (!previewRenderer) {
+        try {
+            console.log("Creando renderizador de previsualización por primera vez...");
+            previewRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
+            previewRenderer.setSize(size, size);
+            previewRenderer.setPixelRatio(window.devicePixelRatio);
+        } catch (e) {
+            console.error("No se pudo inicializar el renderizador de WebGL:", e);
+            previewRenderer = null; // Asegurarse de que no se intente usar si falló
+            return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="40">❌</text></svg>';
+        }
+    }
+    // ---- FIN DE LA CORRECCIÓN ----
+
+    // 3. La escena, cámara e iluminación se siguen creando nuevas para cada previsualización
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-    let renderer;
-
-    try {
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
-        renderer.setSize(size, size);
-        renderer.setPixelRatio(window.devicePixelRatio);
-    } catch (e) {
-        console.error("No se pudo inicializar el renderizador de WebGL:", e);
-        return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="40">❌</text></svg>';
-    }
-    
-    // 3. Iluminación de la escena
     scene.add(new THREE.AmbientLight(0xffffff, 0.9));
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
     dirLight.position.set(1.5, 2, 1);
@@ -29,12 +35,10 @@ async function generate3DPreview(modelJson, size = 450) {
     let dataUrl = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="40">❓</text></svg>';
 
     try {
-        // 4. Creación del modelo usando la función global
         model = createModelFromJSON(modelJson);
         if (!model) throw new Error("createModelFromJSON devolvió un modelo nulo.");
         scene.add(model);
 
-        // 5. Lógica de centrado de cámara
         const box = new THREE.Box3().setFromObject(model);
         const modelSize = box.getSize(new THREE.Vector3());
         const modelCenter = box.getCenter(new THREE.Vector3());
@@ -43,24 +47,22 @@ async function generate3DPreview(modelJson, size = 450) {
         if (maxDim > 0 && isFinite(maxDim)) {
             const fov = camera.fov * (Math.PI / 180);
             let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-            cameraZ *= 1.8; // Alejar un poco para que no se corte
-
+            cameraZ *= 1.8;
             camera.position.set(modelCenter.x, modelCenter.y, modelCenter.z + cameraZ);
             camera.lookAt(modelCenter);
         } else {
-             camera.position.set(0,0,5); // Posición por defecto si el modelo no tiene tamaño
+             camera.position.set(0, 0, 5);
         }
 
-        // 6. Renderizado de la escena
-        renderer.render(scene, camera);
-        dataUrl = renderer.domElement.toDataURL('image/png');
+        // Se usa el renderizador compartido
+        previewRenderer.render(scene, camera);
+        dataUrl = previewRenderer.domElement.toDataURL('image/png');
 
     } catch (error) {
         console.error("¡ERROR FATAL DURANTE LA GENERACIÓN DE PREVISUALIZACIÓN!", error);
         console.error("JSON que causó el error:", JSON.stringify(modelJson, null, 2));
     } finally {
-        // 7. Limpieza de memoria (MUY IMPORTANTE)
-        if (renderer) renderer.dispose();
+        // Limpieza de memoria: ¡YA NO SE DESTRUYE EL RENDERIZADOR!
         if (model) {
             model.traverse(object => {
                 if (object.isMesh) {
