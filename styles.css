@@ -175,8 +175,8 @@ h2 {background-color: black; font: helvetica !important;
   margin-left: 0.7%;
   margin-top: 0.2%;
     border-radius: 5px;
-    width: 37%;
-    height: 30%;
+    width: auto;
+    height: auto;
     max-height: auto; 
     justify-content: center;
     align-items: center;
@@ -2692,7 +2692,9 @@ border: 0px solid #555; border-radius: 5px; padding: 0px; z-index: 10002; }
             height: 720px;
            
         }
-   canvas {position: relative ; display: block;
+   canvas {  border-radius: 8px;    }
+
+.canvas2 {position: relative ; display: block;
             background-color: #ffffff00;
             border-radius: 8px;
              width: auto;
@@ -2703,7 +2705,6 @@ border: 0px solid #555; border-radius: 5px; padding: 0px; z-index: 10002; }
             transform:  translateX(-50%); 
             border: 1px solid #444444a9;
         }
-
   .canvas-container {
 height: 720px !important ;
 width: 1280px!important ;

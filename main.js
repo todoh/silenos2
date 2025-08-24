@@ -94,6 +94,12 @@ function cerrartodo() {
   document.getElementById('renderizador').style.display = 'none';
   document.getElementById('interactivo').style.display = 'none';
   document.getElementById('programador').style.display = 'none';
+  document.getElementById('generadorpersonajes').style.display = 'none';
+  document.getElementById('generadoredificios').style.display = 'none';
+
+
+
+
 }
 
 function abrir(escena) {
@@ -371,99 +377,8 @@ function actualizarBotonContextual() {
         newBtn2.style.display = 'none';
     }
 }
-
-
-
-/**
- * CORREGIDO: Abre un modal para seleccionar un LIBRO y generar el storyboard.
- * Esta función ahora solo pide un libro y llama a la función correcta.
- */
-function abrirModalGenerarStoryboardDesdeLibro() {
-    // Comprobar si hay libros disponibles
-    if (!libros || libros.length === 0) {
-        alert("No hay libros en la biblioteca. Por favor, crea un libro primero.");
-        return;
-    }
-
-    // Eliminar modales anteriores
-    const existingOverlay = document.getElementById('storyboard-gen-modal-overlay');
-    if (existingOverlay) {
-        existingOverlay.remove();
-    }
-
-    // HTML del modal, ahora solo con selector de libro
-    const modalHTML = `
-        <div id="storyboard-gen-modal-overlay" class="modal-overlay" style="display: block;">
-            <div id="storyboard-gen-modal" class="modal-content" style="display: flex; flex-direction: column;">
-                <button class="modal-close-btn" onclick="cerrarModalGenerarStoryboard()">&times;</button>
-                <h2 style="font-size: 1.5em; font-weight: bold; margin-bottom: 1rem;">Generar Storyboard desde Libro</h2>
-                <p style="margin-bottom: 1.5rem;">Selecciona un libro. La IA leerá su contenido y generará una escena con una toma por cada párrafo.</p>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label for="libro-select-storyboard" style="display: block; margin-bottom: 0.5rem;">Libro:</label>
-                    <select id="libro-select-storyboard" class="modal-select">
-                        <option value="">Selecciona un libro...</option>
-                        ${libros.map(libro => `<option value="${libro.id}">${libro.titulo}</option>`).join('')}
-                    </select>
-                </div>
-
-                <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
-                    <button onclick="cerrarModalGenerarStoryboard()" class="btn btn-secondary">Cancelar</button>
-                    <button id="confirm-storyboard-gen" class="btn btn-primary">Generar Tomas</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-    // Lógica del botón de confirmación
-    document.getElementById('confirm-storyboard-gen').onclick = () => {
-        const selectedLibroId = document.getElementById('libro-select-storyboard').value;
-
-        if (!selectedLibroId) {
-            alert("Por favor, selecciona un libro.");
-            return;
-        }
-
-        // --- LÓGICA CLAVE ---
-        // Se llama a la función que procesa un LIBRO.
-        // Ahora está definida en este mismo archivo, por lo que no dará error.
-        if (typeof crearYMostrarEscenasParaLibro === 'function') {
-            console.log(`Iniciando generación de storyboard desde el libro ID: ${selectedLibroId}`);
-            crearYMostrarEscenasParaLibro(selectedLibroId);
-        } else {
-            // Este error ya no debería ocurrir.
-            alert("Error: La función 'crearYMostrarEscenasParaLibro' no está disponible. Asegúrate de que el script correspondiente esté cargado.");
-        }
-        
-        cerrarModalGenerarStoryboard();
-        // Nos aseguramos de que el usuario vea la sección del storyboard.
-        abrir('escenah'); 
-    };
-
-    // Cierre del modal
-    document.getElementById('storyboard-gen-modal-overlay').onclick = function(e) {
-        if (e.target.id === 'storyboard-gen-modal-overlay') {
-            cerrarModalGenerarStoryboard();
-        }
-    };
-}
-
-
-/**
- * Cierra el modal de generación de storyboard.
- */
-function cerrarModalGenerarStoryboard() {
-    const overlay = document.getElementById('storyboard-gen-modal-overlay');
-    if (overlay) {
-        overlay.remove();
-    }
-}
-
-/**
- * NUEVA FUNCIÓN: Muestra u oculta un indicador de carga global.
- */
+ 
+ 
 function mostrarIndicadorCarga(mostrar, mensaje = "Procesando...") {
     let overlay = document.getElementById('loading-overlay');
     if (mostrar) {
@@ -487,135 +402,8 @@ function mostrarIndicadorCarga(mostrar, mensaje = "Procesando...") {
 
 
  
-// En tu archivo main.js, reemplaza la función existente por esta:
+ 
 
-/**
- * Genera un storyboard, pidiendo a la IA que divida cada párrafo en múltiples
- * tomas. Para cada toma, solo se rellena el campo del guion conceptual.
- *
- * @param {string} libroId - El ID del libro para el cual generar el storyboard.
- */
-async function crearYMostrarEscenasParaLibro(libroId) {
-    if (!libroId) {
-        alert("No se ha seleccionado ningún libro.");
-        return;
-    }
-
-    const libro = libros.find(l => l.id === libroId);
-    if (!libro) {
-        alert("El libro seleccionado no se encontró.");
-        return;
-    }
-
-    let contenidoCompleto = "";
-    const capitulosDelLibro = Object.values(escenas).filter(cap => cap.libroId === libroId);
-
-    for (const capitulo of capitulosDelLibro) {
-        if (capitulo.frames && Array.isArray(capitulo.frames)) {
-            for (const frame of capitulo.frames) {
-                if (frame.texto && frame.texto.trim() !== "") {
-                    contenidoCompleto += frame.texto + "\n\n";
-                }
-            }
-        }
-    }
-
-    if (!contenidoCompleto.trim()) {
-        alert("El libro seleccionado está vacío o sus capítulos no contienen texto. No se pueden generar tomas.");
-        return;
-    }
-
-    const parrafos = contenidoCompleto.split('\n\n').filter(p => p.trim() !== '');
-    if (parrafos.length === 0) {
-        alert("No se encontraron párrafos válidos en el libro para generar tomas.");
-        return;
-    }
-
-    mostrarIndicadorCarga(true, `Preparando escena para "${libro.titulo}"...`);
-
-    const nuevaEscena = {
-        id: `scene_${Date.now()}`,
-        nombre: `Storyboard de ${libro.titulo}`,
-        tomas: []
-    };
-    
-    storyScenes.push(nuevaEscena);
-    activeSceneId = nuevaEscena.id;
-    
-    if (typeof renderEscenasUI === 'function') {
-        renderEscenasUI();
-    } else {
-        console.error("La función `renderEscenasUI` no está disponible para actualizar la vista.");
-        mostrarIndicadorCarga(false);
-        return;
-    }
-
-    try {
-        for (let i = 0; i < parrafos.length; i++) {
-            const parrafo = parrafos[i];
-            
-            mostrarIndicadorCarga(true, `Generando tomas para el párrafo ${i + 1}/${parrafos.length}...`);
-
-            // --- CAMBIO 1: El prompt pide múltiples tomas, pero solo el guion conceptual para cada una ---
-            const prompt = `Basado en el siguiente párrafo de una historia, divídelo en las tomas cinematográficas necesarias para narrarlo visualmente. Para CADA TOMA, genera únicamente una descripción detallada ("guion_conceptual").
-
-Párrafo: "${parrafo}"
-
-Formato de respuesta (JSON estricto con un array de tomas, cada una con un solo campo):
-{
-  "tomas_generadas": [
-    {
-      "guion_conceptual": "Descripción detallada de la primera toma, incluyendo personajes, acciones, entorno, tipo de plano y emoción."
-    },
-    {
-      "guion_conceptual": "Descripción de la segunda toma..."
-    }
-  ]
-}`;
-            
-            if (typeof llamarIAConFeedback !== 'function') {
-                 throw new Error("La función `llamarIAConFeedback` no está definida.");
-            }
-            
-            const modelToUse = 'gemini-2.5-flash';
-            const respuestaAPI = await llamarIAConFeedback(prompt, `Párrafo ${i+1}`, modelToUse, true);
-
-            // --- CAMBIO 2: La lógica procesa el array, pero crea la toma con el prompt visual vacío ---
-            if (respuestaAPI && Array.isArray(respuestaAPI.tomas_generadas) && respuestaAPI.tomas_generadas.length > 0) {
-                
-                for (const tomaData of respuestaAPI.tomas_generadas) {
-                    // Solo necesitamos validar que el guion conceptual exista
-                    if (tomaData.guion_conceptual) {
-                        const nuevaToma = {
-                            id: `toma_${nuevaEscena.id}_${nuevaEscena.tomas.length}`,
-                            duracion: 8,
-                            imagen: '',
-                            guionConceptual: tomaData.guion_conceptual, // Se rellena desde la IA
-                            guionTecnico: "",                          // Se deja vacío intencionadamente
-                            guionArtistico: ""
-                        };
-                        nuevaEscena.tomas.push(nuevaToma);
-                    }
-                }
-                
-                if (typeof renderEscenasUI === 'function') {
-                    renderEscenasUI();
-                }
-
-            } else {
-                console.warn(`No se pudo generar ninguna toma para el párrafo ${i+1}:`, parrafo);
-            }
-        }
-        
-        console.log(`Generación de storyboard completada con ${nuevaEscena.tomas.length} tomas.`);
-
-    } catch (error) {
-        console.error("Error durante la generación del storyboard:", error);
-        alert("Ocurrió un error al generar las tomas. Revisa la consola para más detalles.");
-    } finally {
-        mostrarIndicadorCarga(false);
-    }
-}
 
 function toggleTheme() {
     document.body.classList.toggle('dark-theme');

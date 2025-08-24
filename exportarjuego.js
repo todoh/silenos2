@@ -97,7 +97,7 @@ async function generarGAME(nombreMomentoInicial) {
         html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #1a1a1a; color: #ffffff; overflow: hidden; }
         .game-container { position: relative; width: 100%; height: 100%; }
         .background-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; }
-        #game-image-bg { width: 100%; height: 100%; object-fit: cover !important; object-position: center bottom; }
+        #game-image-bg { width: 100%; height: 100%; object-fit: expand !important; object-position: center bottom; }
         #game-entities-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 95%; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 2%; gap: 1vw; pointer-events: none; }
         .entity-sprite { object-fit: contain; -webkit-filter: drop-shadow(5px 5px 5px #222); filter: drop-shadow(5px 5px 5px #222); }
         .content-container { position: absolute; left: 50%; transform: translateX(-50%); bottom: 5%; width: 90%; max-width: 1100px; padding: 20px; border-radius: 12px; background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-sizing: border-box; text-align: center; }

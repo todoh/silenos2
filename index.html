@@ -26,6 +26,7 @@ crossorigin="anonymous"></script>
 <link rel="stylesheet" href="p-style.css">
 <link rel="stylesheet" href="editor.css">
 <link rel="stylesheet" href="galeria.css">
+<link rel="stylesheet" href="3d-style.css">
 
 <!-- Hoja de estilos para el nuevo editor de datos -->
 <link rel="stylesheet" href="editor-personajes.css">
@@ -57,8 +58,7 @@ editor de datos -->
 <script src="https://accounts.google.com/gsi/client" onload="gsiClientLoaded()" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7136138379132657"
-     crossorigin="anonymous"></script>
+
 
 </head>
 <body class="clear-view-mode">
@@ -1871,6 +1871,108 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
 
 </div>
 
+<div id="generadorpersonajes" class="pantalla" title="Generador de Personajes">
+ <div class="flex">
+        <!-- Panel de Controles -->
+        <div id="controls-panel" class="bg-gray-900 p-6 flex flex-col space-y-4 shadow-2xl">
+                    <p></p><p style="opacity: 0;" >.</p>  
+
+          <p></p><p></p>  
+            <!-- Selección de Modelo Base -->
+            <div class="border-b border-gray-700 pb-4">
+                <label for="model-select" class="block text-sm font-medium mb-1">Elige un modelo base</label>
+                <select id="model-select" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-cyan-500 focus:border-cyan-500">
+                    <option value="niño">Niño</option>
+                    <option value="adolescente">Adolescente</option>
+                    <option value="adulto">Adulto</option>
+                </select>
+            </div>
+<p></p>
+            <!-- Edición Manual -->
+            <div id="manual-edit-panel" class="border-b border-gray-700 pb-4 space-y-3">
+                <h2 class="text-lg font-semibold text-cyan-400">Edición Manual</h2>
+                <!-- Colores -->
+                <div class="flex items-center justify-between">
+                    <label for="skin-color" class="text-sm font-medium">Piel</label>
+                    <input type="color" id="skin-color" value="#f2d5b1" class="w-24 h-8">
+                </div>
+                <div class="flex items-center justify-between">
+                    <label for="shirt-color" class="text-sm font-medium">Camiseta</label>
+                    <input type="color" id="shirt-color" value="#5a67d8" class="w-24 h-8">
+                </div>
+                <div class="flex items-center justify-between">
+                    <label for="pants-color" class="text-sm font-medium">Pantalones</label>
+                    <input type="color" id="pants-color" value="#333333" class="w-24 h-8">
+                </div>
+                <div class="flex items-center justify-between">
+                    <label for="shoes-color" class="text-sm font-medium">Zapatos</label>
+                    <input type="color" id="shoes-color" value="#ffffff" class="w-24 h-8">
+                </div>
+                <!-- Accesorios -->
+                <div class="pt-2">
+                    <label for="accessory-select" class="block text-sm font-medium mb-1">Accesorios</label>
+                    <div class="flex space-x-2">
+                        <select id="accessory-select" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2">
+                            <option value="gorra_plana">Gorra (Visera Plana)</option>
+                            <option value="gorra_beisbol">Gorra (Béisbol)</option>
+                            <option value="gafas">Gafas de Sol (Aviador)</option>
+                            <option value="mascara">Máscara (Antifaz)</option>
+                            <option value="collar">Collar</option>
+                            <option value="pulsera_ancha">Pulsera (Ancha)</option>
+                            <option value="pulsera_fina">Pulsera (Fina)</option>
+                            <option value="zapatillas">Zapatillas (Botín)</option>
+                        </select>
+                        <button id="add-accessory-btn" class="bg-gray-600 hover:bg-gray-700 px-4 rounded-md">Añadir</button>
+                    </div>
+                    <div id="equipped-accessories" class="mt-2 space-y-1">
+                        <!-- Los accesorios equipados aparecerán aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controles de IA -->
+            <div class="space-y-3">
+                 <h2 class="text-lg font-semibold text-cyan-400">Edición con IA (Gemini)</h2>
+                <div>
+                    <label for="api-key" class="block text-sm font-medium mb-1">Introduce tu Google API Key</label>
+                    <input type="password" id="api-key" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2" placeholder="Pega tu clave aquí">
+                </div>
+                <div>
+                    <label for="prompt" class="block text-sm font-medium mb-1">Describe las modificaciones</label>
+                    <textarea id="prompt" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2" placeholder="Ej: Añade una mochila verde y haz la cabeza un 20% más grande."></textarea>
+                </div>
+                <div class="flex items-center space-x-4">
+                     <button id="generate-btn" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 flex items-center justify-center">
+                        <svg id="generate-icon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                        <span>Generar</span>
+                    </button>
+                    <div id="loader" class="loader hidden"></div>
+                </div>
+            </div>
+           
+            <!-- Salida del JSON -->
+            <div class="flex-grow flex flex-col pt-4">
+                <label for="json-output" class="block text-sm font-medium mb-1">JSON del Modelo Resultante</label>
+                <textarea id="json-output" readonly class="w-full flex-grow bg-gray-900 text-green-400 font-mono text-xs p-2 border border-gray-700 rounded-md"></textarea>
+                <button id="copy-json-btn" class="mt-2 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md text-sm">Copiar JSON</button>
+            </div>
+
+        </div>
+
+        <!-- Contenedor de la Escena 3D -->
+        <div id="scene-container"></div>
+    </div>
+    
+
+</div>
+<div id="generadoredificios" class="pantalla" title="Generador de Edificios">
+
+
+
+</div>
+
+
+
 
 <div id="menuweb">
     <div id="titulo2">
@@ -1880,7 +1982,7 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
 
         <input class="barra" type="text" id="asistente-titulo-input" placeholder="Título del proyecto" value="Nombre De Tu Proyecto">
 <button onclick="cerrartodo(), abrirVentana('personajes'); renderizarPreviewsInicialesDeDatos();">Datos</button>
-        <button onclick="cerrartodo(), abrirVentana('procedimiento');" >LI</button>
+         
         <button onclick="cerrartodo(), abrirVentana('guion-literario');">📃</button>
         <button onclick="cerrartodo(), abrirVentana('capitulosh');">📚</button>
         <button onclick="cerrartodo(), abrirVentana('momentos');">🖱️</button>
@@ -1889,7 +1991,16 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
         <button onclick="cerrartodo(), abrirVentana('escenah');">🎬</button>
         <button onclick="cerrartodo(),abrirVentana('interactivo');" style="display: none;">🎮</button>
         
-        <button onclick="cerrartodo(), abrirVentana('proyecto');">🏗️Proyecto</button>
+        <button onclick="cerrartodo(), abrirVentana('proyecto');">Proyecto</button>
+        <div class="p-dropdown">
+                <button class="p-dropbtn">Generar</button>
+                <div class="p-dropdown-content">
+                    <a href="#" onclick="cerrartodo(), abrirVentana('procedimiento'); return false;">Cuentos Ilustrados</a>
+                    <a href="#" onclick="cerrartodo(), abrirVentana('generadorpersonajes');  return false;">Personajes 3D</a>
+                    <a href="#" onclick="cerrartodo(), abrirVentana('generadoredificios'); return false;">Edificios 3D</a>
+                </div>
+            </div>
+        
         <button id="bguardarjson" onclick="guardarJSON()">💾</button>
         <input type="file" id="file-load" accept="application/json" onchange="cargarJSON(event)" style="display: none;">
         <button id="bcargarjson" onclick="document.getElementById('file-load').click()">🗂️</button>
@@ -1988,6 +2099,9 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
 <script src="generador.js"></script>
 <script src="generador3d.js"></script> <!-- Nuevo script para 3D -->
 
+
+
+
 <script src="compositor-escenas.js"></script> 
 
 <script src="gestionEscenas.js"></script>  
@@ -2075,6 +2189,7 @@ INSIDE THE BODY TAG -->
      
 <script src="reescritura.js"></script>        
       
+<script type="module" src="3d-creadorpersonajes.js"></script>
 
 
 <script src="p-nodes-index.js"></script>
@@ -2089,6 +2204,8 @@ INSIDE THE BODY TAG -->
 <script src="p-ejecucion.js"></script>
 <script src="p-main.js"></script>
 <script src="procedimiento.js"></script>
+<script src="escena-ai.js"></script>
+
  <script src="main.js" defer></script>
 
 <!-- Modal Genérico para Edición -->
@@ -2197,4 +2314,3 @@ function signOut() {
 <script src="https://unpkg.com/jwt-decode/build/jwt-decode.js"></script>
 </body>
 </html>
-
