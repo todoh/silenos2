@@ -11,14 +11,14 @@ crossorigin="anonymous"></script>
 
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="styles2.css">
-<link rel="stylesheet" href="clarooscuro.css">
+
 <link rel="stylesheet" href="momentos.css">
 <link rel="stylesheet" href="editor-momento.css">
 
 <link rel="stylesheet" href="biblioteca.css">
 
 <link rel="stylesheet" href="animacionessvg.css">
-<link rel="stylesheet" href="rpgmaker.css">
+ 
 <link rel="stylesheet" href="ultimosajustes.css">
 
 <link rel="stylesheet" href="interactivo.css">
@@ -59,7 +59,51 @@ editor de datos -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
 
+<style>
+ 
+         
+        label {
+          
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        input[type="password"], textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 0px solid #dddfe2;
+            border-radius: 6px;
+            box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
+            font-size: 1rem;
+        }
+     #barra2 {display: none; }  
+       
+      #prompt {
+margin-top:4%;
+width: 80%;
 
+
+      } #response-container {
+        overflow-y: scroll;
+        margin-left: 10%;
+  border-radius: 6px;
+width: 80%;
+  padding: 0.75rem;
+     height: 60%;       /* Asegura que el padding no afecte el ancho total */
+margin-bottom: 5%;
+      }
+ 
+        #response-container {
+            margin-top: 1.5rem;
+            background-color: #f7f7f7;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 1rem;
+            white-space: pre-wrap; /* Mantiene los saltos de línea */
+            word-wrap: break-word; /* Evita el desbordamiento de texto */
+        }
+  
+
+</style>
 </head>
 <body class="clear-view-mode">
   
@@ -287,10 +331,7 @@ editor de datos -->
 
 <div id="googlde-auth-container"></div>
 
-<div id="rpgmaker" class="pantalla" data-titulo="RPG Maker">
-    <!-- Controles de Partida y Exportación -->
-   
-</div>
+ 
 
 <div id="animaciones" class="pantalla" data-titulo="🎬 Animación 3D" style="display: none;">
     <div class="contenedor-principal" style="display: flex; flex-direction: column; height: 100%; padding: 1rem; box-sizing: border-box;">
@@ -1870,6 +1911,21 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
 
 </div>
 
+<div id="chat2" class="pantalla"  >
+ 
+ 
+        
+        <textarea id="prompt" placeholder="Ej: ¿Cuál es la distancia entre la Tierra y la Luna?"></textarea>
+        <button id="submitBtn" onclick="llamarAGemini()">Enviar</button>
+        <div id="response-container"></div>
+ 
+ 
+
+
+
+</div>
+
+
 <div id="generadorpersonajes" class="pantalla" title="Generador de Personajes">
  <div class="flex">
         <!-- Panel de Controles -->
@@ -1986,10 +2042,13 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
 
 
 <div id="menuweb">
-    <div id="titulo2">
+ <div id="titulo2">
         <div class="title" onclick="cerrartodo(), abrirVentana('info');">
             <span>S I L E N</span><span class="os-red"> O S</span>
         </div>
+<div id="barra2"  >
+
+   
 
         <input class="barra" type="text" id="asistente-titulo-input" placeholder="Título del proyecto" value="Nombre De Tu Proyecto">
 <button onclick="cerrartodo(), abrirVentana('personajes'); renderizarPreviewsInicialesDeDatos();">Datos</button>
@@ -2002,10 +2061,11 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
         <button onclick="cerrartodo(), abrirVentana('escenah');">🎬</button>
         <button onclick="cerrartodo(),abrirVentana('interactivo');" style="display: none;">🎮</button>
 <button onclick="cerrartodo(); abrirVentana('biblioteca'); renderizarGaleria(recopilarTodasLasImagenes());">🖼️</button>   
+<button onclick="cerrartodo(); abrirVentana('chat2'); ">✨</button>   
 
  
 
-
+ 
         <button onclick="cerrartodo(), abrirVentana('proyecto');">Proyecto</button>
         <div class="p-dropdown">
                 <button class="p-dropbtn">Generar</button>
@@ -2027,18 +2087,23 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
         <button onclick="abrirModalExportar()">Exportar</button>
 
         <!-- Área de autenticación Reestructurada -->
-        <div id="auth-container">
+        
+    </div>
+
+    <div id="auth-container">
             <!-- Botón de Login (visible cuando no está logueado) -->
             <button id="login-btn" class="mnml">
                 Iniciar
             </button>
             <!-- Información del usuario (visible cuando está logueado) -->
               <div id="user-info" class="hidden" style="align-items: center; gap: 10px;">
-                <img id="user-pic" onclick="cerrartodo(), abrirVentana('conexion');" src=" " alt="Foto de perfil" style="top:0%; margin: 0%; width: 40px; height: 40px; border-radius: 50%; margin-right: 30px;">
-                <button id="logout-btn" class="mnml">Salir</button>
+                <img id="user-pic" onclick="cerrartodo(), abrirVentana('conexion');" src="" alt="Foto de perfil" style="width: 40px; height: 40px; border-radius: 50%; cursor: pointer;">
+                <span id="user-name" style="color: white; font-weight: bold; margin-right: 10px;"></span>
+                <button id="logout-btn" class="mnml" onclick="signOut()">Salir</button>
             </div>
         </div>
-    </div>
+
+</div>
 </div>
 
 
@@ -2098,6 +2163,7 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
 
  This was a duplicate load and has been removed -->
 <script src="mini3d.js"></script>
+<script src="chat.js"></script>
 
 <script src="momentos-generacion.js"></script>
 <script src="momentos-core.js"></script>
@@ -2288,44 +2354,33 @@ padding-left: 6%;
     });
  </script>
  <script>
-function handleCredentialResponse(response) {
-  // 1. Decodificar la credencial para obtener los datos del usuario
-  const responsePayload = jwt_decode(response.credential);
+    function handleCredentialResponse(response) {
+        const responsePayload = jwt_decode(response.credential);
+        console.log("Login exitoso para:", responsePayload.name);
 
-  // (Opcional) Mantenemos los logs en la consola para depuración
-  console.log("Login exitoso para:", responsePayload.name);
+        document.getElementById('login-btn').style.display = 'none';
 
-  // 2. Ocultar el botón de "Iniciar Sesión"
-  document.querySelector('.g_id_signin').style.display = 'none';
-  // También es buena idea ocultar el otro div de Google para evitar popups
-  document.getElementById('g_id_onload').style.display = 'none';
+        const userInfo = document.getElementById('user-info');
+        const userPic = document.getElementById('user-pic');
+        const userName = document.getElementById('user-name');
+        const barra = document.getElementById('barra2');
 
+        userPic.src = responsePayload.picture;
+        userName.innerText = responsePayload.given_name || responsePayload.name.split(' ')[0];
 
-  // 3. Obtener los elementos del perfil y rellenarlos con los datos
-  const userProfileContainer = document.getElementById('user-profile-container');
-  const userProfilePic = document.getElementById('user-profile-pic');
-  const userProfileName = document.getElementById('user-profile-name');
+        userInfo.style.display = 'flex';
+        userInfo.classList.remove('hidden');
+        barra.style.display = 'flex';
+    }
 
-  userProfilePic.src = responsePayload.picture;
-  userProfileName.innerText = responsePayload.given_name || responsePayload.name.split(' ')[0]; // Muestra el primer nombre
+    function signOut() {
+        document.getElementById('user-info').style.display = 'none';
+        
 
-  // 4. Mostrar el contenedor del perfil de usuario
-  userProfileContainer.style.display = 'flex'; // Usamos flex para que se alinee bien
-}
-
-function signOut() {
-  // 1. Ocultamos el perfil del usuario
-  document.getElementById('user-profile-container').style.display = 'none';
-
-  // 2. Mostramos de nuevo el botón de "Iniciar Sesión"
-  document.querySelector('.g_id_signin').style.display = 'block';
-  document.getElementById('g_id_onload').style.display = 'block';
-
-  console.log('El usuario ha cerrado sesión.');
-  
-  // Nota: Esto es un cierre de sesión visual.
-  // Google gestiona las cookies, pero para el usuario, la sesión en tu web ha terminado.
-}
+        document.getElementById('login-btn').style.display = 'block';
+document.getElementById('barra').style.display = 'none';
+        console.log('El usuario ha cerrado sesión.');
+    }
 
 </script>
 <script src="https://unpkg.com/jwt-decode/build/jwt-decode.js"></script>

@@ -91,6 +91,7 @@ function cerrartodo() {
   document.getElementById('procedimiento').style.display = 'none';
   document.getElementById('info').style.display = 'none';
 
+  document.getElementById('chat').style.display = 'none';
   document.getElementById('renderizador').style.display = 'none';
   document.getElementById('interactivo').style.display = 'none';
   document.getElementById('programador').style.display = 'none';
@@ -904,130 +905,7 @@ function cerrarModalIAHerramientas() {
     });
 
 
-function abrirSelectorDeLibro(event) {
-    event.stopPropagation(); 
-    const popup = document.getElementById('selector-libro-popup');
-    if (!popup) return;
-
-    const isVisible = popup.style.display === 'block';
-
-    if (isVisible) {
-        popup.style.display = 'none';
-    } else {
-        renderizarSelectorDeLibro();
-        const rect = event.currentTarget.getBoundingClientRect();
-        popup.style.top = `${rect.bottom + window.scrollY + 5}px`;
-        popup.style.left = `${rect.left + window.scrollX}px`;
-        popup.style.display = 'block';
-    }
-}
-
-function cerrarSelectorDeLibro() {
-    const popup = document.getElementById('selector-libro-popup');
-    if (popup) {
-        popup.style.display = 'none';
-    }
-}
-
-function renderizarSelectorDeLibro() {
-    const popup = document.getElementById('selector-libro-popup');
-    if (!popup) return;
-
-    popup.innerHTML = ''; 
-
-    const crearLibroBtn = document.createElement('button');
-    crearLibroBtn.className = 'guion-popup-item-local crear-libro-btn-popup';
-    crearLibroBtn.innerHTML = '➕ Crear Nuevo Libro';
-    crearLibroBtn.onclick = () => crearNuevoLibro();
-   // popup.appendChild(crearLibroBtn);
-
-    if (libros.length > 0) {
-        popup.appendChild(document.createElement('hr'));
-    }
-    
-    libros.forEach(libro => {
-        const libroItem = document.createElement('div');
-        libroItem.className = 'guion-popup-item-local libro-item-container';
-        libroItem.onclick = () => seleccionarLibro(libro.id);
-
-        const libroTituloSpan = document.createElement('span');
-        libroTituloSpan.className = 'libro-popup-titulo';
-        libroTituloSpan.textContent = libro.titulo;
-        
-        const editarBtn = document.createElement('button');
-        editarBtn.className = 'libro-popup-editar-btn';
-        editarBtn.innerHTML = '✏️';
-        editarBtn.title = 'Cambiar nombre';
-        editarBtn.onclick = (event) => {
-            event.stopPropagation(); 
-            iniciarEdicionNombreLibro(event, libro.id);
-        };
-        
-        libroItem.appendChild(libroTituloSpan);
-        libroItem.appendChild(editarBtn);
-        popup.appendChild(libroItem);
-    });
-}
-
-function iniciarEdicionNombreLibro(event, libroId) {
-    const botonEditar = event.currentTarget;
-    const itemContainer = botonEditar.parentElement;
-    const tituloSpan = itemContainer.querySelector('.libro-popup-titulo');
-
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = tituloSpan.textContent;
-    input.className = 'libro-nombre-input-edicion';
-    
-    itemContainer.replaceChild(input, tituloSpan);
-    input.focus();
-    input.select();
-
-    input.addEventListener('blur', () => {
-        guardarNuevoNombreLibro(input, libroId);
-    });
-
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            input.blur(); 
-        } else if (e.key === 'Escape') {
-            renderizarSelectorDeLibro();
-        }
-    });
-}
-
-function guardarNuevoNombreLibro(inputElement, libroId) {
-    const nuevoTitulo = inputElement.value.trim();
-    const libro = libros.find(l => l.id === libroId);
-
-    if (libro && nuevoTitulo) {
-        libro.titulo = nuevoTitulo;
-
-        if (libro.id === libroActivoId) {
-            const tituloContainer = document.getElementById('libro-activo-titulo');
-            if (tituloContainer) {
-                tituloContainer.textContent = `Libro: ${nuevoTitulo}`;
-            }
-        }
-    }
-    renderizarSelectorDeLibro();
-}
-
-
  
-
-function seleccionarLibro(id) {
-    libroActivoId = id;
-    const libro = libros.find(l => l.id === id);
-    const tituloContainer = document.getElementById('libro-activo-titulo');
-    if (libro && tituloContainer) {
-        tituloContainer.textContent = `Libro: ${libro.titulo}`;
-    }
-    cerrarSelectorDeLibro();
-    if (typeof actualizarLista === 'function') {
-        actualizarLista();
-    }
-}
 
 function abrirModalSeleccionLibroParaFrames() {
     const modal = document.getElementById('modal-seleccionar-libro-para-frames');
