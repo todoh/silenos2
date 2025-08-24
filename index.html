@@ -125,8 +125,7 @@ editor de datos -->
             <button class="tons" onclick="abrirVentana('momentos');"    >Librojuego</button>
 
         </div>
-     
-
+              
 
             <button class="tons"  onclick="abrirVentana('vistageneral');"style="display: none;">Vista General</button>
             <div id="removidos"  style="display: none;">
@@ -149,13 +148,13 @@ editor de datos -->
 
     </div>
 </div>
-<div id="biblioteca" class="pantalla" data-titulo="Biblioteca" style="display: none;" >
+<div id="biblioteca" class="pantalla" data-titulo="Biblioteca"  >
        <div id="biblioteca-controles">
         <button id="descargar-zip-btn" class="pro6">📥</button>
     </div>
     <div id="biblioteca-grid"></div>
 </div>
-<div id="diapositivas" class="pantalla" data-titulo="Diapositivas" style="display: none;" >
+<div id="diapositivas" class="pantalla" data-titulo="Diapositivas"   >
   <div class="w-full lg:w-1/3 xl:w-1/4 p-4 overflow-y-auto flex flex-col">
      
 
@@ -1887,6 +1886,16 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
                     <option value="adulto">Adulto</option>
                 </select>
             </div>
+
+            <div class="mt-4">
+    <label for="animation-select" class="block text-sm font-medium text-gray-300 mb-1">Animación</label>
+    <select id="animation-select" class="w-full bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
+        <option value="static">Estático</option>
+        <option value="breathing">Respirando</option>
+        <option value="walking">Caminando</option>
+    </select>
+</div>
+
 <p></p>
             <!-- Edición Manual -->
             <div id="manual-edit-panel" class="border-b border-gray-700 pb-4 space-y-3">
@@ -1894,19 +1903,24 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
                 <!-- Colores -->
                 <div class="flex items-center justify-between">
                     <label for="skin-color" class="text-sm font-medium">Piel</label>
-                    <input type="color" id="skin-color" value="#f2d5b1" class="w-24 h-8">
+                    <input type="color" id="skin-color" value="#f2d5b1" class="w-24 h-4">
                 </div>
                 <div class="flex items-center justify-between">
                     <label for="shirt-color" class="text-sm font-medium">Camiseta</label>
-                    <input type="color" id="shirt-color" value="#5a67d8" class="w-24 h-8">
+                    <input type="color" id="shirt-color" value="#5a67d8" class="w-24 h-4">
                 </div>
-                <div class="flex items-center justify-between">
-                    <label for="pants-color" class="text-sm font-medium">Pantalones</label>
-                    <input type="color" id="pants-color" value="#333333" class="w-24 h-8">
-                </div>
+                <!-- Reemplaza el antiguo div de "Pantalones" por estos dos -->
+<div class="flex items-center justify-between mb-2">
+    <label for="pants-upper-color" class="text-sm font-medium text-gray-300">Pantalón (Superior)</label>
+    <input type="color" id="pants-upper-color" value="#667EEA" class="w-10 h-4 p-0.5 border-gray-600 rounded cursor-pointer">
+</div>
+<div class="flex items-center justify-between mb-2">
+    <label for="pants-lower-color" class="text-sm font-medium text-gray-300">Pantalón (Inferior)</label>
+    <input type="color" id="pants-lower-color" value="#667EEA" class="w-10 h-4 p-0.5 border-gray-600 rounded cursor-pointer">
+</div>
                 <div class="flex items-center justify-between">
                     <label for="shoes-color" class="text-sm font-medium">Zapatos</label>
-                    <input type="color" id="shoes-color" value="#ffffff" class="w-24 h-8">
+                    <input type="color" id="shoes-color" value="#ffffff" class="w-24 h-4">
                 </div>
                 <!-- Accesorios -->
                 <div class="pt-2">
@@ -1933,10 +1947,7 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
             <!-- Controles de IA -->
             <div class="space-y-3">
                  <h2 class="text-lg font-semibold text-cyan-400">Edición con IA (Gemini)</h2>
-                <div>
-                    <label for="api-key" class="block text-sm font-medium mb-1">Introduce tu Google API Key</label>
-                    <input type="password" id="api-key" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2" placeholder="Pega tu clave aquí">
-                </div>
+                
                 <div>
                     <label for="prompt" class="block text-sm font-medium mb-1">Describe las modificaciones</label>
                     <textarea id="prompt" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2" placeholder="Ej: Añade una mochila verde y haz la cabeza un 20% más grande."></textarea>
@@ -1990,7 +2001,11 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
         <button onclick="cerrartodo(),abrirVentana('programador');">💻</button>
         <button onclick="cerrartodo(), abrirVentana('escenah');">🎬</button>
         <button onclick="cerrartodo(),abrirVentana('interactivo');" style="display: none;">🎮</button>
-        
+<button onclick="cerrartodo(); abrirVentana('biblioteca'); renderizarGaleria(recopilarTodasLasImagenes());">🖼️</button>   
+
+ 
+
+
         <button onclick="cerrartodo(), abrirVentana('proyecto');">Proyecto</button>
         <div class="p-dropdown">
                 <button class="p-dropbtn">Generar</button>
@@ -1998,6 +2013,8 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
                     <a href="#" onclick="cerrartodo(), abrirVentana('procedimiento'); return false;">Cuentos Ilustrados</a>
                     <a href="#" onclick="cerrartodo(), abrirVentana('generadorpersonajes');  return false;">Personajes 3D</a>
                     <a href="#" onclick="cerrartodo(), abrirVentana('generadoredificios'); return false;">Edificios 3D</a>
+                    <a href="#" onclick="cerrartodo(), abrirVentana('diapositivas'); return false;">Videos con Diapositivas</a>
+                    <a href="#" onclick="cerrartodo(), abrirVentana('animacionessvg'); return false;">Animaciones SVG</a>
                 </div>
             </div>
         
