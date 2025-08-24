@@ -115,7 +115,7 @@ async function generarHTMLTomas() {
                 .toma-container { 
                     margin: 40px 0; 
                     padding-left: 20px; 
-                    border-left: 3px solid #bdc3c7; 
+                    
                     page-break-inside: avoid; 
                 }
                 .toma-container img { 
@@ -123,13 +123,13 @@ async function generarHTMLTomas() {
                     height: auto; 
                     border-radius: 4px; 
                     margin-bottom: 15px; 
-                    border: 1px solid #ddd;
+                
                 }
                 .no-image-placeholder { 
                     width: 100%; 
                     height: 250px; 
                     background-color: #f1f3f5; 
-                    border: 2px dashed #ced4da; 
+                    
                     border-radius: 6px; 
                     display: flex; 
                     align-items: center; 
