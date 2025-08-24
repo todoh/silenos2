@@ -7,6 +7,17 @@
     height: 91%;
 }
 
+#main-script-input {
+ 
+width: 80%;
+height: 150px;
+
+
+}
+
+
+
+
 /* El canvas debe rellenar su contenedor al 100% */
 #scene-container canvas {
     width: 100%;

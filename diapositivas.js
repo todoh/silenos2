@@ -9,17 +9,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const stopRecordBtn = document.getElementById('stop-record-btn');
     const downloadLink = document.getElementById('download-link');
     const statusEl = document.getElementById('status');
-    const ctx = previewCanvas.getContext('2d');
 
-    // --- CONFIGURACIÓN Y ESTADO ---
-    const canvasWidth = 720;
-    const canvasHeight = 1280;
+    // --- CONFIGURACIÓN DE CANVAS ---
+    const canvasWidth = 1280;
+    const canvasHeight = 720;
+
+    // Canvas visible para la vista previa del usuario
     previewCanvas.width = canvasWidth;
     previewCanvas.height = canvasHeight;
+    const ctx = previewCanvas.getContext('2d');
 
+    // Canvas OCULTO (en memoria) para la grabación en alta resolución.
+    const recordingCanvas = document.createElement('canvas');
+    recordingCanvas.width = canvasWidth;
+    recordingCanvas.height = canvasHeight;
+    const recordCtx = recordingCanvas.getContext('2d');
+
+    // --- ESTADO ---
     let recorder;
     let animationFrameId;
-    let uploadedImageFiles = []; // Almacenará los archivos de imagen subidos
+    let uploadedImageFiles = [];
 
     const hiddenAudioEl = document.createElement('audio');
     hiddenAudioEl.crossOrigin = "anonymous";
@@ -27,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- MANEJO DE LA GALERÍA DE IMÁGENES ---
     imageGalleryInput.addEventListener('change', (event) => {
         uploadedImageFiles = Array.from(event.target.files);
-        imageThumbnailContainer.innerHTML = ''; // Limpiar miniaturas anteriores
+        imageThumbnailContainer.innerHTML = '';
         
         if (uploadedImageFiles.length === 0) {
             imageThumbnailContainer.innerHTML = '<p class="text-gray-500 text-sm">Ninguna imagen seleccionada.</p>';
@@ -48,11 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- FUNCIONES DE RENDERIZADO Y PRECARGA ---
-
-    // Dibuja una imagen en el canvas (simplificado, ya no dibuja texto)
-    const drawImageOnCanvas = (imgObject) => {
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    const drawImageOnRecordingCanvas = (imgObject) => {
+        recordCtx.fillStyle = 'black';
+        recordCtx.fillRect(0, 0, canvasWidth, canvasHeight);
         if (!imgObject || !imgObject.complete || imgObject.naturalHeight === 0) return;
 
         const canvasAspect = canvasWidth / canvasHeight;
@@ -70,10 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
             sx = 0;
             sy = (imgObject.naturalHeight - sHeight) / 2;
         }
-        ctx.drawImage(imgObject, sx, sy, sWidth, sHeight, 0, 0, canvasWidth, canvasHeight);
+        recordCtx.drawImage(imgObject, sx, sy, sWidth, sHeight, 0, 0, canvasWidth, canvasHeight);
     };
     
-    // Precarga las imágenes para que estén listas para el dibujado
     const preloadImages = (scenes) => {
         statusEl.textContent = 'Cargando imágenes...';
         const promises = scenes.map(scene => {
@@ -89,8 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- LÓGICA DE AUDIO ---
-    
-    // Genera un único audio para todo el texto y devuelve su duración en segundos.
     const generateFullAudioTrack = async (text) => {
         statusEl.textContent = 'Generando narración de audio...';
         if (!text || text.trim() === '') return 0;
@@ -102,14 +106,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const audioBlob = await response.blob();
             hiddenAudioEl.src = URL.createObjectURL(audioBlob);
             
-            // Espera a que los metadatos del audio (incluida la duración) se carguen
             await new Promise((resolve, reject) => {
                 hiddenAudioEl.onloadedmetadata = () => resolve();
                 hiddenAudioEl.onerror = () => reject('No se pudo cargar el audio.');
             });
             
             console.log(`Audio generado. Duración: ${hiddenAudioEl.duration} segundos.`);
-            return hiddenAudioEl.duration; // Devuelve la duración total
+            return hiddenAudioEl.duration;
 
         } catch (error) {
             console.error(error);
@@ -119,14 +122,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // --- LÓGICA DE GRABACIÓN PRINCIPAL ---
-
     const handleRecordingStop = () => {
         if (!recorder) return;
         recorder.stopRecording(() => {
             const blob = recorder.getBlob();
             const url = URL.createObjectURL(blob);
             downloadLink.href = url;
-            downloadLink.download = `video_generado_${Date.now()}.webm`; // .webm es el formato correcto
+            downloadLink.download = `video_generado_${Date.now()}.webm`;
             downloadLink.classList.remove('hidden');
 
             startRecordBtn.classList.remove('hidden');
@@ -150,14 +152,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 1. Configurar UI y deshabilitar botones
         startRecordBtn.disabled = true;
         stopRecordBtn.classList.remove('hidden');
         startRecordBtn.classList.add('hidden');
         downloadLink.classList.add('hidden');
         if(animationFrameId) cancelAnimationFrame(animationFrameId);
 
-        // 2. FASE 1: Generar audio para obtener la duración total
         const totalDurationInSeconds = await generateFullAudioTrack(fullText);
         if (totalDurationInSeconds <= 0) {
             statusEl.textContent = "No se pudo generar el video sin audio.";
@@ -167,35 +167,60 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // 3. Calcular la duración de cada imagen
         const durationPerImageInMs = (totalDurationInSeconds * 1000) / uploadedImageFiles.length;
         const totalDurationInMs = totalDurationInSeconds * 1000;
 
-        // 4. Crear la estructura de datos para el renderizado
         let scenesData = uploadedImageFiles.map(file => ({
             imgSrc: URL.createObjectURL(file),
             imgObject: null,
             duration: durationPerImageInMs
         }));
         
-        // 5. FASE 2: Precargar imágenes
         await preloadImages(scenesData);
         
-        // 6. Combinar streams de video (canvas) y audio (del elemento oculto)
-        const canvasStream = previewCanvas.captureStream(30); // 30 FPS
+        const canvasStream = recordingCanvas.captureStream(30);
         const audioStream = hiddenAudioEl.captureStream ? hiddenAudioEl.captureStream() : hiddenAudioEl.mozCaptureStream();
 
-        recorder = RecordRTC([canvasStream, audioStream], {
+        // --- INICIO DE LA MODIFICACIÓN ---
+        // 1. Extraer las pistas individuales de video y audio.
+        const videoTrack = canvasStream.getVideoTracks()[0];
+        const audioTrack = audioStream.getAudioTracks()[0];
+
+        // 2. Aplicar restricciones a la pista de video para forzar la resolución.
+        try {
+            await videoTrack.applyConstraints({
+                width: { exact: canvasWidth },
+                height: { exact: canvasHeight }
+            });
+            const settings = videoTrack.getSettings();
+            console.log(`Pista de video configurada a: ${settings.width}x${settings.height}`);
+        } catch (e) {
+            console.error('Error al aplicar las restricciones de resolución a la pista de video:', e);
+            statusEl.textContent = "Error: No se pudo forzar la resolución del video.";
+            startRecordBtn.disabled = false;
+            stopRecordBtn.classList.add('hidden');
+            startRecordBtn.classList.remove('hidden');
+            return;
+        }
+        
+        // 3. Crear un nuevo MediaStream combinado con las pistas ya configuradas.
+        const combinedStream = new MediaStream([videoTrack, audioTrack]);
+        
+        // 4. Inicializar RecordRTC con el stream único y combinado.
+        recorder = RecordRTC(combinedStream, {
+        // --- FIN DE LA MODIFICACIÓN ---
             type: 'video',
             mimeType: 'video/webm;codecs=vp9,opus',
             disableLogs: true,
-            videoBitsPerSecond: 3000000, // Calidad de video
-            audioBitsPerSecond: 128000  // Calidad de audio
+            videoBitsPerSecond: 8 * 1024 * 1024,
+            audioBitsPerSecond: 192000,
+            width: canvasWidth,
+            height: canvasHeight
+            // Se elimina la propiedad 'canvas' ya que el stream está pre-configurado.
         });
         
-        // 7. FASE 3: Iniciar grabación y bucle de renderizado
         recorder.startRecording();
-        hiddenAudioEl.play(); // Reproducir el audio completo desde el inicio
+        hiddenAudioEl.play();
         
         let startTime = Date.now();
         const renderLoop = () => {
@@ -206,7 +231,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Determinar qué imagen mostrar según el tiempo transcurrido
             const currentImageIndex = Math.min(
                 Math.floor(elapsedTime / durationPerImageInMs),
                 scenesData.length - 1
@@ -214,7 +238,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             statusEl.textContent = `Grabando imagen ${currentImageIndex + 1} de ${scenesData.length}...`;
             const currentScene = scenesData[currentImageIndex];
-            drawImageOnCanvas(currentScene.imgObject);
+            
+            drawImageOnRecordingCanvas(currentScene.imgObject);
+            ctx.drawImage(recordingCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
 
             animationFrameId = requestAnimationFrame(renderLoop);
         };
@@ -227,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hiddenAudioEl.currentTime = 0;
         if (recorder && recorder.getState() === 'recording') {
             handleRecordingStop();
-        } else { // Resetear UI si se detiene antes de tiempo
+        } else {
             startRecordBtn.disabled = false;
             startRecordBtn.classList.remove('hidden');
             stopRecordBtn.classList.add('hidden');

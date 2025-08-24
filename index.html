@@ -43,11 +43,11 @@ crossorigin="anonymous"></script>
 <!-- Hoja de estilos para el nuevo
 <script src="https://apis.google.com/js/api.js" async defer></script>
 
-
+editor de datos -->
 <script src="https://www.webrtc-experiment.com/RecordRTC.js"></script>
 
 
-editor de datos -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <meta property="og:title" content="SILENOS Versión 1.1.13" />
@@ -155,31 +155,8 @@ editor de datos -->
     <div id="biblioteca-grid"></div>
 </div>
 <div id="diapositivas" class="pantalla" data-titulo="Diapositivas"   >
-  <div class="w-full lg:w-1/3 xl:w-1/4 p-4 overflow-y-auto flex flex-col">
-     
 
-        <div class="flex-grow flex flex-col space-y-4">
-            <div class="flex-grow flex flex-col">
-                <label for="main-script-input" class="block text-sm font-medium text-gray-300 mb-2">1. Escribe el guion completo aquí</label>
-                <textarea id="main-script-input" rows="10" class="flex-grow block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm p-3"></textarea>
-            </div>
-
-            <div>
-                <label for="image-gallery-input" class="block text-sm font-medium text-gray-300 mb-2">2. Sube una o varias imágenes</label>
-                <input type="file" id="image-gallery-input" accept="image/*" multiple class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100">
-                <div id="image-thumbnail-container" class="mt-4 bg-gray-800 p-3 rounded-lg min-h-[120px]">
-                    </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="w-full lg:w-2/3 xl:w-3/4 bg-gray-800 flex flex-col items-center justify-center p-4 lg:p-8">
-        <div class="w-full max-w-sm">
-            <div class="bg-black rounded-xl shadow-2xl overflow-hidden aspect-9-16">
-                <canvas id="preview-canvas" class="w-full h-full"></canvas>
-            </div>
-        </div>
-        <div id="status" class="mt-4 text-center text-gray-400 h-6"></div>
+     <div id="status" class="mt-4 text-center text-gray-400 h-6"></div>
         <div class="mt-4 flex flex-wrap gap-3 justify-center">
             <button id="start-record-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200">
                 Generar y Grabar Video
@@ -189,8 +166,31 @@ editor de datos -->
             </button>
         </div>
         <a id="download-link" class="hidden mt-6 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 text-center">
-            Descargar Video MP4
+            Descargar Video
         </a>
+
+        <div class="flex-grow flex flex-col space-y-4">
+            <div class="flex-grow flex flex-col">
+                
+                <textarea id="main-script-input" rows="10"   ></textarea>
+            </div>
+
+            <div>
+                <label for="image-gallery-input" class="block text-sm font-medium text-gray-300 mb-2">2. Sube una o varias imágenes</label>
+                <input type="file" id="image-gallery-input" accept="image/*" multiple class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100">
+                <div id="image-thumbnail-container" class="mt-4 bg-gray-800 p-3 rounded-lg min-h-[120px]">
+                    </div>
+            </div>
+        </div>
+   
+
+    <div class="w-full lg:w-2/3 xl:w-3/4 bg-gray-800 flex flex-col items-center justify-center p-4 lg:p-8">
+        <div class="w-full max-w-sm">
+            <div class="bg-black rounded-xl shadow-2xl overflow-hidden aspect-9-16">
+                <canvas id="preview-canvas" class="w-full h-full"></canvas>
+            </div>
+        </div>
+        
     </div>
 
 
