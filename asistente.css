@@ -93,6 +93,31 @@ position: fixed;        width: 320px;
         min-width: 35px;
         text-align: right;
     }
+
+
+    #auth-container {
+position: fixed;
+right: 1%;
+bottom: 2%;
+z-index: 1000;
+color: black;
+background-color: transparent;
+
+
+    }
+#login-btn2 {background-color: transparent !important;
+border: none !important;
+cursor: pointer!important;
+font-size: 26px !important;
+ box-shadow: none !important;
+color: #000 !important;
+
+
+}
+
+
+
+
     #google-auth-container {
         position: fixed;
         display: flex;

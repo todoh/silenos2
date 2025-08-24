@@ -539,10 +539,10 @@ overflow-x: hidden; ;
 
 width: auto;
 height: auto;
-
+box-shadow: none;
 background-color: transparent !important;
 border: none !important;
-color: #ffffff !important;
+color: #000000 !important;
 margin-right: 10px;
 }
 .brand {

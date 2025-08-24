@@ -83,7 +83,7 @@ function cerrartodo() {
     document.getElementById('juego').style.display = 'none';
     document.getElementById('animacionsvg').style.display = 'none';
   document.getElementById('animacionessvg').style.display = 'none';
-  document.getElementById('rpgmaker').style.display = 'none';
+  
   document.getElementById('proyecto').style.display = 'none';
   document.getElementById('interactivo').style.display = 'none';
   document.getElementById('diapositivas').style.display = 'none';
@@ -91,7 +91,7 @@ function cerrartodo() {
   document.getElementById('procedimiento').style.display = 'none';
   document.getElementById('info').style.display = 'none';
 
-  document.getElementById('chat').style.display = 'none';
+  document.getElementById('chat2').style.display = 'none';
   document.getElementById('renderizador').style.display = 'none';
   document.getElementById('interactivo').style.display = 'none';
   document.getElementById('programador').style.display = 'none';
