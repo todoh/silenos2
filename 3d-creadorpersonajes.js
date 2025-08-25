@@ -8,8 +8,8 @@ let isCharacterCreatorInitialized = false;
 // --- CONSTANTES DE UI ---
 const sceneContainer = document.getElementById('scene-container');
 const modelSelect = document.getElementById('model-select');
-const generateBtn = document.getElementById('generate-btn');
-const apiKeyInput = document.getElementById('api-key');
+const generateBtn = document.getElementById('generate-btn5');
+ 
 const promptInput = document.getElementById('prompt');
 const jsonOutput = document.getElementById('json-output');
 const copyJsonBtn = document.getElementById('copy-json-btn');
@@ -518,9 +518,13 @@ function updateJsonFromScene() {
     jsonOutput.value = JSON.stringify(currentModelJSON, null, 2);
 }
 
+
+
+
 // --- LÓGICA DE LA API DE GEMINI ---
 async function callGeminiAPI2() {
- 
+ const apiKey = localStorage.getItem('silenosGoogleApiKey'); 
+     
     const userPrompt = promptInput.value;
 
     if (!apiKey) {
@@ -541,7 +545,7 @@ ${JSON.stringify(currentModelJSON, null, 2)}
 
 Y aquí está la modificación solicitada por el usuario:`;
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     try {
         const response = await fetch(apiUrl, {

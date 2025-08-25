@@ -72,11 +72,14 @@ const progressBarManager = {
         };
     });
 
+
+    
+function flexear() {}
     /**
      * Función de animación de entrada.
      * Desvanece la pantalla de inicio para revelar la app.
      */
-    function flexear() {
+    function flexear2() {
         const principio = document.getElementById('principio');
         const esfera = document.getElementById('esfera');
         const menuPrincipio = document.getElementById('esfera2');

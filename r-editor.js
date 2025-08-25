@@ -494,8 +494,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     observer.observe(renderizadorEl, { attributes: true });
 
     // Listeners de botones principales
-    editorDOM.zoomInButton.addEventListener('click', zoomIn);
-    editorDOM.zoomOutButton.addEventListener('click', zoomOut);
+    
     editorDOM.saveButton.addEventListener('click', saveWorldToCharacter);
     if (editorDOM.saveToCharacterButton) {
         editorDOM.saveToCharacterButton.addEventListener('click', saveWorldToCharacter);
