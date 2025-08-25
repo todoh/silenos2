@@ -822,7 +822,7 @@ margin-bottom: 5%;
         <div id="r-preview-modal" class="modal-overlay2">
             <div class="modal-content2">
                 <span class="modal-close-button1">&times;</span>
-                   <button id="r-toggle-view-btn" style="padding: 8px 12px; background-color: #333; color: white; border: 1px solid #555; border-radius: 5px; cursor: pointer; visibility: visible; position: fixed; bottom: 10px; right: 50px; z-index: 1000000;">
+                   <button id="r-toggle-view-btn" style="padding: 8px 12px; background-color: #333; color: white; border: 1px solid #555; border-radius: 5px; cursor: pointer; visibility: visible; position: fixed; bottom: 10px; right: 48%; z-index: 1000000;">
             Vista 1ª Persona
         </button>
                 <h3>Previsualización 3D</h3>
@@ -1740,15 +1740,15 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
 </div>
         
         <button id="bguardarjson" onclick="guardarJSON()">💾</button>
-
+<div class="p-dropdown">
      <button class="p-dropbtn">☁️</button>
                 <div class="p-dropdown-content">
                     <a href="#" onclick="cerrartodo(), guardarProyectoEnDrive(); return false;">Guardar en Google Drive</a>
                     <a href="#" onclick="cerrartodo(), abrirVentana('conexion');  return false;">Cargar de Google Drive</a>
                    
                 </div>
-
-        <button  onclick="guardarProyectoEnDrive()">☁️</button>
+</div>
+     
 
         <input type="file" id="file-load" accept="application/json" onchange="cargarJSON(event)" style="display: none;">
         <button id="bcargarjson" onclick="document.getElementById('file-load').click()">🗂️</button>
