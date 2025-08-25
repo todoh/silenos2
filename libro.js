@@ -29,13 +29,23 @@ function renderizarSelectorDeLibro() {
 
     popup.innerHTML = ''; 
 
-    const crearLibroBtn = document.createElement('button');
-    crearLibroBtn.className = 'guion-popup-item-local crear-libro-btn-popup';
-    crearLibroBtn.innerHTML = '➕ Crear Nuevo Libro';
-    crearLibroBtn.onclick = () => crearNuevoLibro();
-    popup.appendChild(crearLibroBtn);
+    // ==================== INICIO DEL CAMBIO ====================
+    // Cambiamos el <button> por un <div> para que se integre perfectamente en la lista
+    const crearLibroItem = document.createElement('div');
+    crearLibroItem.className = 'guion-popup-item-local'; // Usamos la misma clase que los libros
+    crearLibroItem.innerHTML = '➕ Crear Nuevo Libro';
+    
+    crearLibroItem.onclick = () => {
+        crearNuevoLibro();
+        // Opcional pero recomendado: cerrar el popup después de hacer clic
+        cerrarSelectorDeLibro();
+    };
+    popup.appendChild(crearLibroItem);
+    // ===================== FIN DEL CAMBIO ======================
+
 
     if (libros.length > 0) {
+        // La línea horizontal ahora separa "Crear" de la lista de libros
         popup.appendChild(document.createElement('hr'));
     }
     

@@ -323,7 +323,7 @@ async function llamarIA(prompt, generationConfig = {}) {
     if (typeof apiKey === 'undefined' || !apiKey) {
         throw new Error("La API Key de Google no está configurada.");
     }
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${apiKey}`;
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`;
     const payload = {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.5, ...generationConfig },
