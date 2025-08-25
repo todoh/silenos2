@@ -40,10 +40,10 @@ crossorigin="anonymous"></script>
 
 <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
 
-<!-- Hoja de estilos para el nuevo
+ <script src="auth-drive.js"></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
 
-editor de datos -->
+ 
 <script src="https://www.webrtc-experiment.com/RecordRTC.js"></script>
 
 
@@ -790,10 +790,7 @@ margin-bottom: 5%;
 
 
                
-                <div id="r-zoom-controls">
-                    <button id="r-zoom-out-button" class="zoom-btn">-</button>
-                    <button id="r-zoom-in-button" class="zoom-btn">+</button>
-                </div>
+           
                 
                 <button id="r-preview-button">🚀 Previsualizar</button>
  
@@ -1675,7 +1672,7 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
                     <textarea id="prompt" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2" placeholder="Ej: Añade una mochila verde y haz la cabeza un 20% más grande."></textarea>
                 </div>
                 <div class="flex items-center space-x-4">
-                     <button id="generate-btn" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 flex items-center justify-center">
+                     <button id="generate-btn5" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 flex items-center justify-center">
                         <svg id="generate-icon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
                         <span>Generar</span>
                     </button>
@@ -1727,13 +1724,11 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
         <button onclick="cerrartodo(), abrirVentana('escenah');">🎬</button>
         <button onclick="cerrartodo(),abrirVentana('interactivo');" style="display: none;">🎮</button>
 <button onclick="cerrartodo(); abrirVentana('biblioteca'); renderizarGaleria(recopilarTodasLasImagenes());">🖼️</button>   
-<button onclick="cerrartodo(); abrirVentana('chat2'); ">✨ </button>   
-
+<button onclick="cerrartodo(); abrirVentana('chat2'); ">✨</button> 
  
+<button onclick="cerrartodo(), abrirVentana('proyecto');"> Proyecto</button>
 
- 
-        <button onclick="cerrartodo(), abrirVentana('proyecto');">Proyecto</button>
-        <div class="p-dropdown">
+<div class="p-dropdown">
                 <button class="p-dropbtn">Generar</button>
                 <div class="p-dropdown-content">
                     <a href="#" onclick="cerrartodo(), abrirVentana('procedimiento'); return false;">Cuentos Ilustrados</a>
@@ -1742,18 +1737,28 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
                     <a href="#" onclick="cerrartodo(), abrirVentana('diapositivas'); return false;">Videos con Diapositivas</a>
                     <a href="#" onclick="cerrartodo(), abrirVentana('animacionessvg'); return false;">Animaciones SVG</a>
                 </div>
-            </div>
+</div>
         
         <button id="bguardarjson" onclick="guardarJSON()">💾</button>
+
+     <button class="p-dropbtn">☁️</button>
+                <div class="p-dropdown-content">
+                    <a href="#" onclick="cerrartodo(), guardarProyectoEnDrive(); return false;">Guardar en Google Drive</a>
+                    <a href="#" onclick="cerrartodo(), abrirVentana('conexion');  return false;">Cargar de Google Drive</a>
+                   
+                </div>
+
+        <button  onclick="guardarProyectoEnDrive()">☁️</button>
+
         <input type="file" id="file-load" accept="application/json" onchange="cargarJSON(event)" style="display: none;">
         <button id="bcargarjson" onclick="document.getElementById('file-load').click()">🗂️</button>
-        <button id="bguardardrive"  style="display: none;" onclick="guardarProyectoEnDrive()" disabled>💾Drive</button>
+        <button id="bguardardrive"  style="display: none;" onclick="guardarProyectoEnDrive()" disabled>💾Drive</button>        
+  <button id="bguardardrive"  style="display: none;" onclick="guardarProyectoEnDrive()" disabled>💾Drive</button>   
         <button id="bcargardrive"  style="display: none;" onclick="cargarProyectoDesdeDrive()" disabled>🗂️Drive</button>
         <button id="bajustes" onclick="abrirModalConfig()">⚙️</button>
         <button onclick="abrirModalExportar()">Exportar</button>
 
         <!-- Área de autenticación Reestructurada -->
-        
     </div>
 
     <div id="auth-container">
@@ -1913,7 +1918,7 @@ INSIDE THE BODY TAG -->
 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
-<script src="auth-drive.js"></script>
+
 <script src="toma.js"></script>
  
 <script src="exportarjuego3d.js"></script>

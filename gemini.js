@@ -51,7 +51,7 @@ function updateApiKey() {
         
         // --- LÍNEA AÑADIDA ---
         // Guarda la clave en localStorage para que otras ventanas puedan acceder a ella.
-       // localStorage.setItem('silenosGoogleApiKey', newKey);
+        localStorage.setItem('silenosGoogleApiKey', newKey);
         
         if (document.getElementById("apiKeyDisplay")) {
             document.getElementById("apiKeyDisplay").textContent = "🟢";
