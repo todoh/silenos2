@@ -681,7 +681,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // FUNCIONES DE IA Y MODALES
 // =========================================================================
  
- /**
+
+/**
  * Crea y añade un nuevo elemento de "Dato" al DOM, incluyendo todos los controles, 
  * la funcionalidad completa de los botones y el guardado del embedding.
  * @param {object} personajeData - El objeto con los datos del personaje/dato.
@@ -708,20 +709,13 @@ function agregarPersonajeDesdeDatos(personajeData = {}) {
 
     const contenedor = document.createElement('div');
     contenedor.className = 'personaje';
-
-    // --- Guardado de datos clave en el dataset del elemento ---
-    // --- INICIO DE LA CORRECCIÓN ---
-    // Al cargar, 'embedding' es un array. Lo convertimos a un string JSON
-    // para que se guarde correctamente en el atributo data- del DOM.
-    contenedor.dataset.embedding = JSON.stringify(embedding);
-    // --- FIN DE LA CORRECCIÓN ---
     
+    contenedor.dataset.embedding = JSON.stringify(embedding);
     contenedor.dataset.descripcion = personajeData.descripcion || '';
     if (svgContent) {
         contenedor.dataset.svgContent = svgContent;
     }
 
-    // --- Creación de Botones de Etiqueta y Arco ---
     const etiquetaBtn = document.createElement('button');
     etiquetaBtn.className = 'change-tag-btn';
     const opcionEtiqueta = opcionesEtiqueta.find(op => op.valor === etiquetaValor) || opcionesEtiqueta[0];
@@ -733,25 +727,19 @@ function agregarPersonajeDesdeDatos(personajeData = {}) {
 
     const arcoBtn = document.createElement('button');
     arcoBtn.className = 'change-arc-btn';
-    arcoBtn.dataset.arco = arcoValor; // Asignar el valor del arco al dataset
+    arcoBtn.dataset.arco = arcoValor;
 
     const opcionArco = opcionesArco.find(op => op.valor === arcoValor);
-
     if (opcionArco) {
-        // Si es un arco predefinido, usar su emoji y título
         arcoBtn.innerHTML = opcionArco.emoji;
         arcoBtn.title = `Arco: ${opcionArco.titulo}`;
     } else {
-        // Si no se encuentra, es un arco personalizado. Mostrar el texto.
         arcoBtn.innerHTML = arcoValor;
         arcoBtn.title = `Arco: ${arcoValor}`;
     }
-
     arcoBtn.onclick = () => mostrarMenuArcos(arcoBtn);
     contenedor.appendChild(arcoBtn);
 
-
-    // --- Creación de la parte Visual (preview) ---
     const visual = document.createElement('div');
     visual.className = 'personaje-visual';
     const img = document.createElement('img');
@@ -761,35 +749,31 @@ function agregarPersonajeDesdeDatos(personajeData = {}) {
     visual.appendChild(descripcionPreview);
     contenedor.appendChild(visual);
 
-    // --- Input para el nombre ---
     const cajaNombre = document.createElement('input');
     cajaNombre.type = 'text';
     cajaNombre.className = 'nombreh';
     cajaNombre.value = nombre;
     contenedor.appendChild(cajaNombre);
 
-    // --- Overlay de Edición ---
     const overlay = document.createElement('div');
     overlay.className = 'personaje-edit-overlay';
     const editControls = document.createElement('div');
     editControls.className = 'edit-controls';
 
-    // Contenedor de la imagen de previsualización en el editor
     const previewContainer = document.createElement('div');
     previewContainer.className = 'edit-preview-container';
     const previewImage = document.createElement('img');
     previewImage.className = 'edit-preview-image';
     previewContainer.appendChild(previewImage);
     
- const svgPreviewContainer = document.createElement('div');
+    const svgPreviewContainer = document.createElement('div');
     svgPreviewContainer.className = 'edit-svg-preview';
-    svgPreviewContainer.style.display = 'none'; // Oculto por defecto
+    svgPreviewContainer.style.display = 'none';
     previewContainer.appendChild(svgPreviewContainer);
 
-const editorCanvas3D = document.createElement('canvas');
+    const editorCanvas3D = document.createElement('canvas');
     editorCanvas3D.className = 'edit-3d-canvas';
-    editorCanvas3D.style.display = 'none'; // Oculto hasta que se active
- 
+    editorCanvas3D.style.display = 'none';
     previewContainer.appendChild(editorCanvas3D);
 
     const editorCanvasEl = document.createElement('canvas');
@@ -798,7 +782,6 @@ const editorCanvas3D = document.createElement('canvas');
     previewContainer.appendChild(editorCanvasEl);
     editControls.appendChild(previewContainer);
 
-    // Contenedor para los campos de texto y botones
     const textControlsContainer = document.createElement('div');
     textControlsContainer.className = 'edit-text-controls';
 
@@ -811,13 +794,12 @@ const editorCanvas3D = document.createElement('canvas');
     cajaPromptVisual.value = promptVisual;
     cajaPromptVisual.placeholder = 'Prompt Visual...';
     cajaPromptVisual.className = 'prompt-visualh';
- cajaPromptVisual.addEventListener('input', debouncedInputHandler);
-    // --- Wrapper para todos los botones de acción ---
+    cajaPromptVisual.addEventListener('input', debouncedInputHandler);
+
     const buttonsWrapper = document.createElement('div');
     buttonsWrapper.className = 'edit-buttons-wrapper';
 
-    // Se definen las acciones de los botones como funciones internas
-    const generarVectorialNormal = async () => {
+        const generarVectorialNormal = async () => {
         const descripcionPrompt = cajaPromptVisual.value.trim();
         if (!descripcionPrompt) {
             alert("Por favor, escribe una descripción en el 'Prompt Visual' para que la IA pueda generar una imagen.");
@@ -922,117 +904,71 @@ const editorCanvas3D = document.createElement('canvas');
 
     const mejorarSVG = () => mostrarModalMejora(contenedor);
 
-    // --- INICIO DE LA MODIFICACIÓN ---
-    // Esta es la función que se ejecutará al pulsar "Editar SVG".
-// EN: datos.js
-// REEMPLAZA tu función 'editarSVG' actual por esta versión corregida.
-
-// EN: datos.js
-// REEMPLAZA tu función 'editarSVG' actual por esta versión corregida y mejorada.
-
-const editarSVG = async () => {
+    const editarSVG = () => {
     const svgActual = contenedor.dataset.svgContent;
     if (!svgActual) {
-        alert("No hay un SVG para editar. Genera una imagen vectorial primero.");
+        alert("No hay un SVG para editar. Genera una imagen primero.");
         return;
     }
     if (typeof fabric === 'undefined') {
-        alert("Error: La librería Fabric.js no está disponible para editar el SVG.");
+        alert("La biblioteca de edición (Fabric.js) no está disponible.");
         return;
     }
+    previewImage.style.display = 'none';
+    editorCanvasEl.style.display = 'block';
+    botonAccionesImagen.style.display = 'none';
+    botonGuardarSVG.style.display = 'inline-block';
 
-    // Proporciona feedback visual al usuario
-    const botonOriginal = botonAccionesImagen.querySelector('.item-menu-etiqueta');
-    if (botonOriginal) botonOriginal.innerHTML = '⚙️ Ajustando...';
-    botonAccionesImagen.disabled = true;
+    // Aseguramos que el canvas tenga las dimensiones correctas antes de inicializar
+    const canvasWidth = previewContainer.clientWidth;
+    const canvasHeight = previewContainer.clientHeight;
+    
+    fabricEditorCanvas = new fabric.Canvas(editorCanvasEl, {
+        width: canvasWidth,
+        height: canvasHeight,
+    });
 
-    try {
-        // Usamos una Promesa para manejar la carga asíncrona del SVG en Fabric.js
-        const nuevoSvgContent = await new Promise((resolve, reject) => {
-            // Se crea un canvas temporal en memoria para hacer la manipulación.
-            const tempCanvas = new fabric.StaticCanvas(null, { width: 512, height: 512 });
+    fabric.loadSVGFromString(svgActual, (objects, options) => {
+        const group = fabric.util.groupSVGElements(objects, options);
 
-            fabric.loadSVGFromString(svgActual, (objects, options) => {
-                if (!objects || objects.length === 0) {
-                    tempCanvas.dispose();
-                    return reject(new Error("El SVG está vacío o no se pudo interpretar."));
-                }
+        // --- INICIO DE LA CORRECCIÓN ---
+        // 1. Escalamos el grupo para que ocupe el ancho del canvas con un pequeño margen.
+        group.scaleToWidth(canvasWidth * 0.95);
 
-                const group = fabric.util.groupSVGElements(objects, options);
-
-                // --- INICIO DE LA LÓGICA DE CORRECCIÓN ---
-
-                // 1. Calcular el factor de escala para que el grupo ocupe ~98% del canvas,
-                // dejando un pequeño margen estético.
-                const padding = 1;
-                const scaleFactor = Math.min(
-                    (tempCanvas.width * padding) / group.width,
-                    (tempCanvas.height * padding) / group.height
-                );
-                
-                // 2. Aplicar la escala al grupo.
-                group.scale(scaleFactor);
-                
-                // 3. Forzar a Fabric.js a recalcular las coordenadas y dimensiones del objeto
-                // DESPUÉS de haberlo escalado. Este paso es crucial.
-                group.setCoords();
-
-                // 4. Ahora, con las dimensiones actualizadas, calcular y aplicar la posición final.
-                group.set({
-                    // Centrar horizontalmente
-                    left: (tempCanvas.width - group.getScaledWidth()) / 2,
-                    
-                    // Alinear al borde inferior.
-                    // Se resta la altura del objeto a la altura del canvas para que
-                    // el borde inferior del objeto coincida con el borde inferior del canvas.
-                    top: tempCanvas.height - group.getScaledHeight()
-                });
-
-                // --- FIN DE LA LÓGICA DE CORRECCIÓN ---
-
-                tempCanvas.add(group);
-                tempCanvas.renderAll();
-
-                // 5. Exportar el CANVAS COMPLETO como un nuevo SVG.
-                // Esto "fija" las transformaciones (escala y posición) en el nuevo código SVG.
-                const svgExportado = tempCanvas.toSVG({
-                     suppressPreamble: true, // Para un SVG más limpio
-                     viewBox: { x: 0, y: 0, width: 512, height: 512 }
-                });
-
-                tempCanvas.dispose(); // Liberar memoria del canvas temporal
-                resolve(svgExportado);
-            });
+        // 2. Lo posicionamos: centrado horizontalmente y pegado abajo.
+        group.set({
+            left: canvasWidth / 2, // Centrado horizontal
+            top: canvasHeight - group.getScaledHeight() - 5 // Alineado al fondo con un margen de 5px
         });
 
-        // Actualizar el dataset del elemento con el nuevo SVG corregido
-        contenedor.dataset.svgContent = nuevoSvgContent;
+        // 3. Actualizamos las coordenadas del objeto. ¡Paso crucial!
+        group.setCoords();
+        // --- FIN DE LA CORRECCIÓN ---
 
-        // Actualizar la previsualización visual usando el nuevo SVG
-        const dataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(nuevoSvgContent)));
-        actualizarVisual(dataUrl, cajaTexto.value);
-
-        alert('El SVG ha sido centrado y alineado al fondo.');
-
-    } catch (error) {
-        console.error("Error al ajustar el SVG:", error);
-        alert(`No se pudo ajustar el SVG: ${error.message}`);
-    } finally {
-        // Restaurar el estado del botón
-        if (botonOriginal) botonOriginal.innerHTML = '✏️ Ajustar SVG';
-        botonAccionesImagen.disabled = false;
-    }
+        fabricEditorCanvas.add(group);
+        fabricEditorCanvas.renderAll();
+    });
 };
-    // --- FIN DE LA MODIFICACIÓN ---
 
-    // Botones que se mantienen fuera del menú
+    // Botón para cargar imagen desde archivo
     const botonCargar = document.createElement('button');
     botonCargar.className = 'edit-btn change-image-btn';
     botonCargar.innerHTML = '📷';
     botonCargar.title = 'Cambiar Imagen';
     buttonsWrapper.appendChild(botonCargar);
 
-    // Botón principal que despliega el menú
+    // --- INICIO DE LA MODIFICACIÓN ---
+    // Se añade el nuevo botón para abrir la galería
+    const botonGaleria = document.createElement('button');
+    botonGaleria.className = 'edit-btn select-gallery-btn';
+    botonGaleria.innerHTML = '🖼️';
+    botonGaleria.title = 'Seleccionar de la Galería';
+    buttonsWrapper.appendChild(botonGaleria);
+
+    // Se asigna el evento onclick para llamar a la nueva función del modal
+    botonGaleria.onclick = () => abrirModalGaleria(contenedor);
+    // --- FIN DE LA MODIFICACIÓN ---
+
     const botonAccionesImagen = document.createElement('button');
     botonAccionesImagen.className = 'edit-btn';
     botonAccionesImagen.innerHTML = '✨';
@@ -1052,7 +988,7 @@ const editarSVG = async () => {
             { texto: 'Vectorial Pro', emoji: '💎', action: generarVectorialPro },
             { texto: 'Realista', emoji: '😍', action: generarRealista },
             { texto: 'Mejorar SVG', emoji: '📈', action: mejorarSVG },
-            { texto: 'Ajustar SVG', emoji: '✏️', action: editarSVG } // Se cambia el texto a "Ajustar SVG"
+            { texto: 'Editar SVG', emoji: '✏️', action: editarSVG }
         ];
 
         opcionesMenu.forEach(op => {
@@ -1090,14 +1026,12 @@ const editarSVG = async () => {
     botonGuardarSVG.style.display = 'none';
     buttonsWrapper.appendChild(botonGuardarSVG);
 
-    // Botón de eliminar, se mantiene fuera del menú
     const botonEliminar = document.createElement('button');
     botonEliminar.className = 'edit-btn delete-btn';
     botonEliminar.innerHTML = '❌';
     botonEliminar.title = 'Eliminar Dato';
     buttonsWrapper.appendChild(botonEliminar);
 
-    // Añadir elementos al DOM
     textControlsContainer.appendChild(cajaTexto);
     textControlsContainer.appendChild(cajaPromptVisual);
     textControlsContainer.appendChild(buttonsWrapper);
@@ -1106,10 +1040,8 @@ const editarSVG = async () => {
     contenedor.appendChild(overlay);
     lista.appendChild(contenedor);
 
-    // --- LÓGICA INTERNA Y LISTENERS (FUNCIONALIDAD RESTAURADA) ---
     let fabricEditorCanvas = null;
-
-    const actualizarVisual = (nuevaImagenSrc, nuevaDescripcion) => {
+       const actualizarVisual = (nuevaImagenSrc, nuevaDescripcion) => {
         img.src = nuevaImagenSrc || '';
         descripcionPreview.textContent = nuevaDescripcion;
         img.classList.toggle('hidden', !nuevaImagenSrc || nuevaImagenSrc.endsWith('/'));
@@ -1123,8 +1055,6 @@ const editarSVG = async () => {
             }
         }
     };
-    
-// EN: datos.js -> DENTRO de agregarPersonajeDesdeDatos -> REEMPLAZA el onclick del botón
 botonGuardarSVG.onclick = () => {
     if (!fabricEditorCanvas) return;
 
@@ -1182,9 +1112,7 @@ botonGuardarSVG.onclick = () => {
         };
         inputFile.click();
     };
-
-    // --- Renderizado Inicial de la Imagen ---
-   if (svgContent && !imagen) {
+ if (svgContent && !imagen) {
         if (typeof fabric !== 'undefined') {
             const tempCanvasEl = document.createElement('canvas');
             // Usamos un tamaño de canvas de previsualización estándar
@@ -1192,43 +1120,25 @@ botonGuardarSVG.onclick = () => {
             const tempCanvasHeight = 250;
             const tempFabricCanvas = new fabric.Canvas(tempCanvasEl, { width: tempCanvasWidth, height: tempCanvasHeight });
 
-          fabric.loadSVGFromString(svgContent, (objects, options) => {
-    if (!objects || objects.length === 0) {
-        tempFabricCanvas.dispose();
-        return;
-    }
-    const group = fabric.util.groupSVGElements(objects, options);
+            fabric.loadSVGFromString(svgContent, (objects, options) => {
+                if (!objects || objects.length === 0) {
+                    tempFabricCanvas.dispose();
+                    return;
+                }
+                const group = fabric.util.groupSVGElements(objects, options);
 
-    // --- INICIO DE LA NUEVA CORRECCIÓN ---
+                // --- INICIO DE LA CORRECCIÓN ---
+                // Gracias al viewBox guardado, Fabric.js ya escala el objeto correctamente.
+                // Solo necesitamos centrarlo en nuestro canvas temporal.
+                group.scaleToWidth(tempCanvasWidth * 0.9);
+                group.scaleToHeight(tempCanvasHeight * 0.9);
+                group.center();
+                // --- FIN DE LA CORRECCIÓN ---
 
-    // 1. Definir un margen interior (padding).
-    const padding = 0.95; // Usamos el 95% del espacio
-    const maxWidth = tempCanvasWidth * padding;
-    const maxHeight = tempCanvasHeight * padding;
-
-    // 2. Escalar el grupo preservando su proporción original.
-    if (group.width / group.height > maxWidth / maxHeight) {
-        group.scaleToWidth(maxWidth);
-    } else {
-        group.scaleToHeight(maxHeight);
-    }
-
-    // 3. Posicionar el grupo manualmente.
-    const bottomMargin = (tempCanvasHeight * (1 - padding));
-    group.set({
-        // Se calcula la posición izquierda para centrar el objeto.
-        // (Ancho del canvas - Ancho del grupo escalado) / 2
-        left: (tempCanvasWidth - group.getScaledWidth()) / 2,
-        
-        // Se alinea al fondo como antes.
-        top: tempCanvasHeight - group.getScaledHeight() - bottomMargin
-    });
-    // --- FIN DE LA NUEVA CORRECCIÓN ---
-
-    tempFabricCanvas.add(group).renderAll();
-    actualizarVisual(tempFabricCanvas.toDataURL({ format: 'png' }), descripcion);
-    tempFabricCanvas.dispose();
-});
+                tempFabricCanvas.add(group).renderAll();
+                actualizarVisual(tempFabricCanvas.toDataURL({ format: 'png' }), descripcion);
+                tempFabricCanvas.dispose();
+            });
         } else {
             // Fallback si Fabric.js no está disponible
             actualizarVisual('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgContent), descripcion);
@@ -1236,10 +1146,137 @@ botonGuardarSVG.onclick = () => {
     } else {
         actualizarVisual(imagen, descripcion);
     }
-
+    
     return contenedor;
 }
- 
+ /**
+ * Recopila todas las URLs de imágenes únicas de la galería de datos existentes.
+ * @returns {string[]} Un array de URLs de imágenes únicas.
+ */
+function recopilarImagenesDeGaleria() {
+    const urls = new Set();
+    // Busca todas las imágenes dentro de los elementos .personaje en la lista principal
+    const imagenes = document.querySelectorAll('#listapersonajes .personaje-visual img');
+    
+    imagenes.forEach(img => {
+        // Se asegura de que la imagen tiene una fuente válida y no es un placeholder
+        if (img.src && !img.src.endsWith('/') && !img.src.startsWith('data:image/gif;base64')) {
+            urls.add(img.src);
+        }
+    });
+    
+    return Array.from(urls);
+}
+
+/**
+ * Abre un modal que muestra todas las imágenes disponibles para seleccionar y actualizar un dato.
+ * @param {HTMLElement} personajeContenedor - El elemento .personaje cuyo visual se actualizará.
+ */
+function abrirModalGaleria(personajeContenedor) {
+    // Evita abrir múltiples modales
+    if (document.getElementById('gallery-select-modal-overlay')) return;
+
+    // Crear el fondo oscuro (overlay)
+    const overlay = document.createElement('div');
+    overlay.id = 'gallery-select-modal-overlay';
+    Object.assign(overlay.style, {
+        position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        display: 'flex', justifyContent: 'center', alignItems: 'center',
+        zIndex: '20000', backdropFilter: 'blur(5px)'
+    });
+
+    // Crear el contenedor principal del modal
+    const modalContent = document.createElement('div');
+    Object.assign(modalContent.style, {
+        backgroundColor: '#fff', padding: '20px', borderRadius: '12px',
+        width: '90%', maxWidth: '800px', height: '80%',
+        display: 'flex', flexDirection: 'column', position: 'relative',
+        boxShadow: '0 5px 20px rgba(0, 0, 0, 0.2)'
+    });
+    // Evitar que un clic dentro del modal lo cierre
+    modalContent.addEventListener('click', e => e.stopPropagation());
+
+    // Título y botón de cierre
+    const modalTitle = document.createElement('h2');
+    modalTitle.textContent = 'Selecciona una Imagen';
+    Object.assign(modalTitle.style, { marginTop: '0', color: '#333', textAlign: 'center' });
+
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '&times;';
+    Object.assign(closeButton.style, {
+        position: 'absolute', top: '10px', right: '15px', fontSize: '24px',
+        background: 'none', border: 'none', cursor: 'pointer', color: '#333'
+    });
+
+    // Contenedor de la cuadrícula de imágenes
+    const imageGrid = document.createElement('div');
+    Object.assign(imageGrid.style, {
+        flexGrow: '1', overflowY: 'auto', display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+        gap: '15px', padding: '15px', borderTop: '1px solid #eee', marginTop: '10px'
+    });
+
+    // Poblar la galería con las imágenes recopiladas
+    const imagenes = recopilarImagenesDeGaleria();
+    if (imagenes.length === 0) {
+        imageGrid.innerHTML = '<p style="color: #666; grid-column: 1 / -1; text-align: center;">No hay imágenes en la galería para seleccionar.</p>';
+    } else {
+        imagenes.forEach(src => {
+            const imgWrapper = document.createElement('div');
+            Object.assign(imgWrapper.style, {
+                cursor: 'pointer', borderRadius: '8px', overflow: 'hidden',
+                border: '2px solid transparent', transition: 'border-color 0.2s',
+                aspectRatio: '1 / 1'
+            });
+            const img = document.createElement('img');
+            img.src = src;
+            Object.assign(img.style, { width: '100%', height: '100%', objectFit: 'cover', display: 'block' });
+
+            imgWrapper.appendChild(img);
+            imgWrapper.onmouseover = () => { imgWrapper.style.borderColor = '#007bff'; };
+            imgWrapper.onmouseout = () => { imgWrapper.style.borderColor = 'transparent'; };
+
+            // Acción al hacer clic en una imagen de la galería
+            imgWrapper.onclick = () => {
+                // Seleccionar los elementos de imagen del dato original
+                const imgPrincipal = personajeContenedor.querySelector('.personaje-visual img');
+                const imgEditor = personajeContenedor.querySelector('.edit-preview-image');
+
+                if (imgPrincipal) {
+                    imgPrincipal.src = src;
+                    imgPrincipal.classList.remove('hidden');
+                }
+                if (imgEditor) {
+                    imgEditor.src = src;
+                    imgEditor.style.display = 'block';
+                }
+
+                // Importante: si se cambia la imagen, ya no se considera un SVG editable
+                delete personajeContenedor.dataset.svgContent;
+                
+                // Cerrar el modal
+                document.body.removeChild(overlay);
+            };
+
+            imageGrid.appendChild(imgWrapper);
+        });
+    }
+    
+    // Función para cerrar el modal
+    const closeModal = () => {
+        if (overlay.parentNode) document.body.removeChild(overlay);
+    };
+    closeButton.onclick = closeModal;
+    overlay.onclick = closeModal;
+
+    // Ensamblar y mostrar el modal
+    modalContent.appendChild(closeButton);
+    modalContent.appendChild(modalTitle);
+    modalContent.appendChild(imageGrid);
+    overlay.appendChild(modalContent);
+    document.body.appendChild(overlay);
+}
 /**
  * Inicializa el modal de IA una sola vez, poblando el selector de arcos.
  * Es importante que la variable 'opcionesArco' esté disponible globalmente.

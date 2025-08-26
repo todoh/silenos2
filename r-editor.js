@@ -40,6 +40,7 @@ let editor3DState = {
     camera: null,
     renderer: null,
     controls: null,
+    transformControls: null, 
     placeableObjects: new THREE.Group(),
     groundObjects: [],
     gridHelper: null
@@ -164,12 +165,6 @@ function iniciarModoSeleccionCoordenada() {
     editorDOM.mapGridContainer.style.cursor = 'crosshair';
 }
 
-// --- NUEVA FUNCIÓN PARA RECARGA MANUAL ---
-
-/**
- * Recarga y vuelve a dibujar manualmente todos los elementos en el canvas del editor 3D.
- * Útil para forzar una actualización visual después de cargar datos.
- */
 function cargarcanvas() {
     console.log("Recarga manual del canvas 3D iniciada...");
     if (!editor3DState.isActive) {
@@ -193,6 +188,14 @@ function initialize3DEditor() {
     }
     container.innerHTML = '';
 
+    container.insertAdjacentHTML('afterbegin', `
+        <div id="r-contextual-menu" style="position: absolute; top: 15px; left: 15px; background-color: rgba(40,40,40,0.8); border-radius: 8px; z-index: 200; display: none; padding: 4px; border: 1px solid rgba(255,255,255,0.2);">
+            <button id="r-context-translate" class="active" title="Mover" style="background-color: #007bff; border: none; color: white; font-size: 20px; cursor: pointer; padding: 8px 12px; border-radius: 5px; transition: background-color 0.2s;">&#10021;</button>
+            <button id="r-context-rotate" title="Rotar" style="background-color: transparent; border: none; color: white; font-size: 20px; cursor: pointer; padding: 8px 12px; border-radius: 5px; transition: background-color 0.2s;">&#8635;</button>
+            <button id="r-context-scale" title="Escalar" style="background-color: transparent; border: none; color: white; font-size: 20px; cursor: pointer; padding: 8px 12px; border-radius: 5px; transition: background-color 0.2s;">&#8596;</button>
+        </div>
+    `);
+
     editor3DState.scene = new THREE.Scene();
     editor3DState.scene.background = new THREE.Color(0x608da0);
     editor3DState.scene.fog = new THREE.Fog(0x608da0, 100, 500);
@@ -213,6 +216,71 @@ function initialize3DEditor() {
     editor3DState.controls.dampingFactor = 0.1;
     editor3DState.controls.screenSpacePanning = false;
     editor3DState.controls.maxPolarAngle = Math.PI / 2.1;
+
+    // +++ INICIO DE LA CORRECCIÓN +++
+    // Se verifica si TransformControls existe antes de usarlo.
+    if (typeof THREE.TransformControls !== 'undefined') {
+        editor3DState.transformControls = new THREE.TransformControls(editor3DState.camera, editor3DState.renderer.domElement);
+        
+        editor3DState.transformControls.addEventListener('dragging-changed', function (event) {
+            editor3DState.controls.enabled = !event.value;
+        });
+
+        // Evento que guarda los cambios al soltar el objeto.
+        editor3DState.transformControls.addEventListener('mouseUp', function () {
+            const object = editor3DState.transformControls.object;
+            if (!object || !object.userData.sourceObject) return;
+
+            const source = object.userData.sourceObject;
+
+            // 1. Encontrar el chunk y el índice actual del objeto.
+            let oldChunkId = null;
+            let oldChunk = null;
+            let objectIndex = -1;
+
+            for (const chunkId in worldData.chunks) {
+                const chunk = worldData.chunks[chunkId];
+                const index = chunk.objects.indexOf(source);
+                if (index > -1) {
+                    oldChunkId = chunkId;
+                    oldChunk = chunk;
+                    objectIndex = index;
+                    break;
+                }
+            }
+
+            if (!oldChunk) {
+                console.error("Error de persistencia: No se pudo encontrar el objeto en ningún chunk.");
+                return;
+            }
+
+            // 2. Calcular el nuevo chunk basado en la posición 3D del objeto.
+            const newChunkX = Math.floor(object.position.x / CHUNK_SIZE);
+            const newChunkZ = Math.floor(object.position.z / CHUNK_SIZE);
+            const newChunkId = `${newChunkX}_${newChunkZ}`;
+
+            // 3. Actualizar las propiedades del objeto (posición relativa, rotación, escala).
+            source.x = object.position.x - (newChunkX * CHUNK_SIZE);
+            source.z = object.position.z - (newChunkZ * CHUNK_SIZE);
+            source.rotationY = THREE.MathUtils.radToDeg(object.rotation.y);
+            source.scale = { x: object.scale.x, y: object.scale.y, z: object.scale.z };
+
+            // 4. Si el chunk ha cambiado, mover el objeto de un array a otro.
+            if (oldChunkId !== newChunkId) {
+                oldChunk.objects.splice(objectIndex, 1);
+                if (!worldData.chunks[newChunkId]) {
+                    worldData.chunks[newChunkId] = { groundTextureKey: oldChunk.groundTextureKey, objects: [] };
+                }
+                worldData.chunks[newChunkId].objects.push(source);
+                console.log(`Objeto movido del chunk ${oldChunkId} al ${newChunkId}.`);
+            }
+        });
+
+        editor3DState.scene.add(editor3DState.transformControls);
+    } else {
+        console.warn("THREE.TransformControls no está cargado. La manipulación de objetos no funcionará.");
+    }
+    // +++ FIN DE LA CORRECCIÓN +++
 
     editor3DState.scene.add(new THREE.AmbientLight(0xffffff, 0.8));
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -249,6 +317,8 @@ function animate3DEditor() {
 }
 
 async function render3DWorldFromData() {
+    if (editor3DState.transformControls) editor3DState.transformControls.detach();
+    
     while (editor3DState.placeableObjects.children.length > 0) {
         editor3DState.placeableObjects.remove(editor3DState.placeableObjects.children[0]);
     }
@@ -300,6 +370,14 @@ async function render3DWorldFromData() {
                 const size = box.getSize(new THREE.Vector3());
                 const yOffset = modelObject.isSprite ? size.y / 2 : -box.min.y;
                 modelObject.position.set(objX, yOffset, objZ);
+
+                if (obj.rotationY) {
+                    modelObject.rotation.y = THREE.MathUtils.degToRad(obj.rotationY);
+                }
+                if (obj.scale) {
+                    modelObject.scale.set(obj.scale.x, obj.scale.y, obj.scale.z);
+                }
+
                 modelObject.castShadow = true;
                 modelObject.userData.sourceObject = obj;
                 editor3DState.placeableObjects.add(modelObject);
@@ -361,6 +439,25 @@ function handleEditorClick(event) {
     const mouse = new THREE.Vector2(((event.clientX - rect.left) / container.clientWidth) * 2 - 1, -((event.clientY - rect.top) / container.clientHeight) * 2 + 1);
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, editor3DState.camera);
+
+    const contextMenu = document.getElementById('r-contextual-menu');
+    if (activeTool.id === 'selector') {
+        if (!editor3DState.transformControls) return; 
+        const intersectsObjects = raycaster.intersectObjects(editor3DState.placeableObjects.children, true);
+        if (intersectsObjects.length > 0) {
+            let mainParent = intersectsObjects[0].object;
+            while (mainParent.parent && mainParent.parent !== editor3DState.placeableObjects) {
+                mainParent = mainParent.parent;
+            }
+            editor3DState.transformControls.attach(mainParent);
+            if (contextMenu) contextMenu.style.display = 'block';
+        } else {
+            editor3DState.transformControls.detach();
+            if (contextMenu) contextMenu.style.display = 'none';
+        }
+        return; 
+    }
+    
     const intersects = raycaster.intersectObjects(editor3DState.groundObjects);
 
     if (intersects.length > 0) {
@@ -378,18 +475,24 @@ function handleEditorClick(event) {
         if (activeTool.category === 'texture') {
             chunk.groundTextureKey = activeTool.id;
         } else if (activeTool.category === 'entity' || activeTool.category === 'customEntity') {
-            if (activeTool.id === 'eraser') {
-                let closestObject = null;
-                let minDistance = 2;
-                chunk.objects.forEach(obj => {
-                    const distance = Math.hypot(obj.x - posX_in_chunk, obj.z - posZ_in_chunk);
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestObject = obj;
+             if (activeTool.id === 'eraser') {
+                const intersectsEraser = raycaster.intersectObjects(editor3DState.placeableObjects.children, true);
+                if (intersectsEraser.length > 0) {
+                    let objectToDelete = intersectsEraser[0].object;
+                    while (objectToDelete.parent && objectToDelete.parent !== editor3DState.placeableObjects) {
+                        objectToDelete = objectToDelete.parent;
                     }
-                });
-                if (closestObject) {
-                    chunk.objects.splice(chunk.objects.indexOf(closestObject), 1);
+                    const sourceObject = objectToDelete.userData.sourceObject;
+                    if (sourceObject) {
+                        for (const currentChunkId in worldData.chunks) {
+                            const currentChunk = worldData.chunks[currentChunkId];
+                            const objectIndex = currentChunk.objects.indexOf(sourceObject);
+                            if (objectIndex > -1) {
+                                currentChunk.objects.splice(objectIndex, 1);
+                                break;
+                            }
+                        }
+                    }
                 }
             } else if (activeTool.id === 'playerStart') {
                 worldData.metadata.playerStartPosition = {
@@ -435,6 +538,13 @@ function selectTool(category, id) {
     document.querySelectorAll('.palette-item.selected').forEach(el => el.classList.remove('selected'));
     const toolElement = document.querySelector(`.palette-item[data-id='${id}']`);
     if (toolElement) toolElement.classList.add('selected');
+
+    if (id !== 'selector' && editor3DState.transformControls) {
+        editor3DState.transformControls.detach();
+        const contextMenu = document.getElementById('r-contextual-menu');
+        if (contextMenu) contextMenu.style.display = 'none';
+    }
+
     editorDOM.mapGridContainer.style.cursor = (id === 'selector') ? 'pointer' : 'crosshair';
 }
 
@@ -461,7 +571,6 @@ function findCharacterImageSrc(dataRefName) {
 // --- INICIALIZACIÓN Y EVENT LISTENERS (CORREGIDO) ---
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Inicialización de datos del mundo
     if (Object.keys(worldData.chunks).length === 0) {
         for (let x = 0; x < GRID_WIDTH; x++) {
             for (let z = 0; z < GRID_HEIGHT; z++) {
@@ -473,12 +582,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         worldData.metadata.playerStartPosition = { chunkX: Math.floor(GRID_WIDTH/2), chunkZ: Math.floor(GRID_HEIGHT/2), subX: 0, subZ: 0 };
     }
 
-    // Poblar UI y configurar estado inicial
     await populatePalettes();
     selectTool('texture', 'grass');
     populateWorldList();
 
-    // Observador para inicializar el editor 3D solo cuando sea visible
     const renderizadorEl = document.getElementById('renderizador');
     const observer = new MutationObserver((mutations) => {
         for (let mutation of mutations) {
@@ -493,8 +600,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     observer.observe(renderizadorEl, { attributes: true });
 
-    // Listeners de botones principales
-    
     editorDOM.saveButton.addEventListener('click', saveWorldToCharacter);
     if (editorDOM.saveToCharacterButton) {
         editorDOM.saveToCharacterButton.addEventListener('click', saveWorldToCharacter);
@@ -502,11 +607,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     editorDOM.previewButton.addEventListener('click', startPreview);
     editorDOM.previewModalCloseBtn.addEventListener('click', stopPreview);
 
-    // --- CAMBIO CLAVE: Listener de carga de mundo corregido ---
     if (editorDOM.loadWorldSelect) {
         editorDOM.loadWorldSelect.addEventListener('change', async (event) => {
-            await loadWorldData(event.target.value); // Espera a que la carga y la paleta se actualicen
-            render3DWorldFromData(); // Renderiza DESPUÉS de que todo esté listo
+            await loadWorldData(event.target.value);
+            render3DWorldFromData();
         });
         editorDOM.loadWorldSelect.addEventListener('click', populateWorldList);
     }
@@ -519,7 +623,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cilindroCheckbox = document.getElementById('edit-es-cilindro-3d');
         cuboCheckbox.addEventListener('change', () => { if (cuboCheckbox.checked) cilindroCheckbox.checked = false; });
         cilindroCheckbox.addEventListener('change', () => { if (cilindroCheckbox.checked) cuboCheckbox.checked = false; });
-        
         document.getElementById('movimiento-seleccionar-coord-btn').addEventListener('click', iniciarModoSeleccionCoordenada);
     }
 
@@ -528,4 +631,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('r-avatar-modal').style.display = 'none';
         });
     }
+
+    editorDOM.mapGridContainer.addEventListener('click', (e) => {
+        const target = e.target.closest('button');
+        if (!target || !target.parentElement || target.parentElement.id !== 'r-contextual-menu') return;
+
+        e.stopPropagation(); 
+        const contextMenu = target.parentElement;
+        const allButtons = contextMenu.querySelectorAll('button');
+        allButtons.forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.backgroundColor = 'transparent';
+        });
+        target.classList.add('active');
+        target.style.backgroundColor = '#007bff';
+
+        if (editor3DState.transformControls) {
+            if (target.id === 'r-context-translate') editor3DState.transformControls.setMode('translate');
+            if (target.id === 'r-context-rotate') editor3DState.transformControls.setMode('rotate');
+            if (target.id === 'r-context-scale') editor3DState.transformControls.setMode('scale');
+        }
+    });
 });

@@ -27,6 +27,7 @@ crossorigin="anonymous"></script>
 <link rel="stylesheet" href="editor.css">
 <link rel="stylesheet" href="galeria.css">
 <link rel="stylesheet" href="3d-style.css">
+<link rel="stylesheet" href="arquitectura.css">
 
 <!-- Hoja de estilos para el nuevo editor de datos -->
 <link rel="stylesheet" href="editor-personajes.css">
@@ -56,7 +57,8 @@ crossorigin="anonymous"></script>
 <meta property="og:image" content="https://raw.githubusercontent.com/todoh/SILENOS/refs/heads/main/silenos.png" />
     <script type="module" src="firebase.js"></script>
 <script src="https://accounts.google.com/gsi/client" onload="gsiClientLoaded()" async defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+   
+ 
 
 
 <style>
@@ -104,6 +106,10 @@ margin-bottom: 5%;
   
 
 </style>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7136138379132657"
+     crossorigin="anonymous"></script>
+
 </head>
 <body class="clear-view-mode">
   
@@ -754,7 +760,7 @@ margin-bottom: 5%;
     </div>
 </div>
 
-<div id="selector-libro-popup" class="lista-guiones-popup-local" style="display: none;">
+<div id="selector-libro-popup" class="lista-guiones-popup-local" style="display: none; transform: translateX(50%);">
     </div>
 
 
@@ -804,7 +810,7 @@ margin-bottom: 5%;
                 </select>
 
                 <!-- NUEVO BOTÓN PARA GUARDAR COMO DATO -->
-                <button id="r-save-to-character-btn">📦 Guardar como Dato</button>
+                <button id="r-save-to-character-btn" disabled >📦 Guardar como Dato</button>
             </div>
         </header>
 
@@ -815,6 +821,14 @@ margin-bottom: 5%;
                 <div id="r-info-box" class="palette"></div>
             </aside>
             <div id="r-map-grid-container">
+    
+            
+<div id="r-contextual-menu">
+    <button id="r-context-translate" class="active" title="Mover"> मूव</button>
+    <button id="r-context-rotate" title="Rotar">🔄</button>
+    <button id="r-context-scale" title="Escalar">↔️</button>
+</div>
+
                 <div id="r-map-grid"></div>
             </div>
         </main>
@@ -1697,6 +1711,93 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
 </div>
 <div id="generadoredificios" class="pantalla" title="Generador de Edificios">
 
+    <div id="controls-panel2" >
+    <div class="mb-6">
+        
+            <div class="space-y-3">
+                <button id="tool-select" class="tool-btn w-full bg-gray-600 hover:bg-gray-700 p-2 rounded-md active">Seleccionar</button>
+                
+                <select id="tool-wall" class="tool-select w-full p-2 rounded-md">
+                    <option value="">— Seleccionar Pared —</option>
+                    <option value="pared">Pared Estándar</option>
+                    <option value="muro">Muro Grueso</option>
+                    <option value="pared_moldura">Pared con Moldura</option>
+                </select>
+                
+                <select id="tool-window" class="tool-select w-full p-2 rounded-md">
+                    <option value="">— Seleccionar Ventana —</option>
+                    <option value="ventana_simple">Ventana Simple</option>
+                    <option value="ventana_doble">Ventana Doble</option>
+                </select>
+
+                <select id="tool-door" class="tool-select w-full p-2 rounded-md">
+                    <option value="">— Seleccionar Puerta —</option>
+                    <option value="puerta_simple">Puerta Simple</option>
+                    <option value="puerta_doble">Puerta Doble</option>
+                </select>
+            </div>
+            <button id="toggle-camera-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 p-2 rounded-md mt-3">Cambiar a Control Ratón</button>
+        </div>
+
+        <!-- Panel de Propiedades -->
+        <div id="properties-panel" class="space-y-4 mb-6 hidden">
+             
+            
+            <div id="transform-mode-buttons" class="grid grid-cols-3 gap-2">
+                <button id="mode-translate" class="bg-blue-600 p-2 rounded-md">Mover</button>
+                <button id="mode-rotate" class="bg-gray-600 p-2 rounded-md">Rotar</button>
+                <button id="mode-scale" class="bg-gray-600 p-2 rounded-md">Escalar</button>
+            </div>
+
+            <div>
+                <label for="propName" class="block text-sm font-medium text-gray-300">Nombre</label>
+                <input type="text" id="propName" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md p-2">
+            </div>
+            
+            <div>
+                <label for="propColor" class="block text-sm font-medium text-gray-300">Color</label>
+                <input type="color" id="propColor" class="mt-1 block w-full h-10 bg-gray-700 border-gray-600 rounded-md p-1 cursor-pointer">
+            </div>
+<div class="prop-item">
+    <label for="propMaterial">Material:</label>
+    <span id="propMaterial" class="material-info-text">ninguno</span>
+</div>
+        
+<div class="tool-section">
+    <h3>Paleta de Materiales</h3>
+    <div id="material-palette-container" class="material-palette">
+        </div>
+</div>
+
+<button id="updatePropsBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Actualizar Nombre</button>
+            <button id="deleteBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">Eliminar Objeto(s)</button>
+        </div>
+        
+        <!-- Importar Modelo JSON -->
+        <div class="mb-6">
+            
+            <textarea id="jsonInput" class="mt-3 w-full h-24 bg-gray-900 text-green-300 font-mono text-xs p-2 rounded-md border border-gray-600" placeholder="Pega aquí el JSON del modelo..."></textarea>
+            <button id="importJsonBtn" class="mt-2 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md">Importar y Añadir</button>
+        </div>
+
+        <!-- Exportación -->
+        <div>
+             
+            <button id="exportJsonBtn" class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Exportar a JSON</button>
+            <textarea id="jsonOutput" readonly class="mt-4 w-full h-48 bg-gray-900 text-green-300 font-mono text-xs p-2 rounded-md"></textarea>
+        </div>
+    </div>
+
+    <!-- Controles de Navegación (Cruceta) -->
+    <div id="d-pad-controls" class="fixed bottom-5 right-5 z-10 grid grid-cols-3 grid-rows-3 w-32 h-32 text-2xl text-white">
+        <div id="d-pad-up" class="d-pad-btn col-start-2 row-start-1 flex items-center justify-center bg-gray-700 hover:bg-gray-600 active:bg-gray-500 cursor-pointer rounded-t-lg">↑</div>
+        <div id="d-pad-left" class="d-pad-btn col-start-1 row-start-2 flex items-center justify-center bg-gray-700 hover:bg-gray-600 active:bg-gray-500 cursor-pointer rounded-l-lg">←</div>
+        <div class="col-start-2 row-start-2"></div>
+        <div id="d-pad-right" class="d-pad-btn col-start-3 row-start-2 flex items-center justify-center bg-gray-700 hover:bg-gray-600 active:bg-gray-500 cursor-pointer rounded-r-lg">→</div>
+        <div id="d-pad-down" class="d-pad-btn col-start-2 row-start-3 flex items-center justify-center bg-gray-700 hover:bg-gray-600 active:bg-gray-500 cursor-pointer rounded-b-lg">↓</div>
+    </div>
+
+<div id="container"></div>
 
 
 </div>
@@ -1718,10 +1819,11 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
          
         <button onclick="cerrartodo(), abrirVentana('guion-literario');">📃</button>
         <button onclick="cerrartodo(), abrirVentana('capitulosh');">📚</button>
+        <button onclick="cerrartodo(), abrirVentana('escenah');">🎬</button>
         <button onclick="cerrartodo(), abrirVentana('momentos');">🖱️</button>
         <button id="bdatos" onclick="cerrartodo(),abrirVentana('renderizador');">🎮</button>
         <button onclick="cerrartodo(),abrirVentana('programador');">💻</button>
-        <button onclick="cerrartodo(), abrirVentana('escenah');">🎬</button>
+        
         <button onclick="cerrartodo(),abrirVentana('interactivo');" style="display: none;">🎮</button>
 <button onclick="cerrartodo(); abrirVentana('biblioteca'); renderizarGaleria(recopilarTodasLasImagenes());">🖼️</button>   
 <button onclick="cerrartodo(); abrirVentana('chat2'); ">✨</button> 
@@ -1743,7 +1845,7 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
 <div class="p-dropdown">
      <button class="p-dropbtn">☁️</button>
                 <div class="p-dropdown-content">
-                    <a href="#" onclick="cerrartodo(), guardarProyectoEnDrive(); return false;">Guardar en Google Drive</a>
+                    <a href="#" onclick="  guardarProyectoEnDrive(); return false;">Guardar en Google Drive</a>
                     <a href="#" onclick="cerrartodo(), abrirVentana('conexion');  return false;">Cargar de Google Drive</a>
                    
                 </div>
@@ -1818,6 +1920,7 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
         <source src="4.mp4" type="video/mp4">    </video></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
 <!-- SCRIPTS MOVED HERE, INSIDE THE BODY TAG -->
@@ -1959,6 +2062,7 @@ INSIDE THE BODY TAG -->
 <script src="p-main.js"></script>
 <script src="procedimiento.js"></script>
 <script src="escena-ai.js"></script>
+<script type="module" src="arquitectura.js"></script>
 
  <script src="main.js" defer></script>
 

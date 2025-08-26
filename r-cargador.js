@@ -174,8 +174,8 @@ function populateWorldList() {
     select.value = currentValue;
 }
 async function populatePalettes() {
-    editorDOM.texturePalette.innerHTML = '<h2>Texturas de Terreno</h2>';
-    editorDOM.entityPalette.innerHTML = '<h2>Entidades</h2>';
+    editorDOM.texturePalette.innerHTML = '';
+    editorDOM.entityPalette.innerHTML = '';
  const avatarBtn = document.createElement('button');
     avatarBtn.className = 'palette-item';
     avatarBtn.innerHTML = `<div class="palette-item-preview palette-item-preview-emoji">👤</div><span>AVATAR</span>`;

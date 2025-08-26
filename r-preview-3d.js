@@ -606,11 +606,22 @@ function loadWorldFromData(data) {
                 
                 if (modelObject) {
                     const modelBox = new THREE.Box3().setFromObject(modelObject);
-    const yOffset = -modelBox.min.y;
-    modelObject.position.set(objX, yOffset, objZ);
-                    if (gameProps.rotacionY) {
+                    const yOffset = -modelBox.min.y;
+                    modelObject.position.set(objX, yOffset, objZ);
+                    
+                    // +++ INICIO DE LA CORRECCIÓN +++
+                    // Se prioriza la rotación y escala del objeto individual (obj)
+                    // sobre las propiedades generales del "Dato" (gameProps).
+                    if (obj.rotationY) {
+                        modelObject.rotation.y = THREE.MathUtils.degToRad(obj.rotationY);
+                    } else if (gameProps.rotacionY) {
                         modelObject.rotation.y = THREE.MathUtils.degToRad(gameProps.rotacionY);
                     }
+
+                    if (obj.scale) {
+                        modelObject.scale.set(obj.scale.x, obj.scale.y, obj.scale.z);
+                    }
+                    // +++ FIN DE LA CORRECCIÓN +++
 
                     previewState.scene.add(modelObject);
                     
