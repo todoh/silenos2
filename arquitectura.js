@@ -127,8 +127,16 @@ function init() {
 }
 
 // --- NUEVA FUNCIÓN DE COMPATIBILIDAD ---
+/**
+ * Convierte un material de la librería global (posiblemente de una versión antigua de THREE)
+ * a un material compatible con la versión de THREE usada en este módulo para evitar errores.
+ * @param {object} libMaterial - El material de window.MATERIAL_LIBRARY.
+ * @param {number} [fallbackColor=0xcccccc] - Un color hexadecimal para usar si el material no es válido.
+ * @returns {THREE.Material} Un material válido para la escena actual.
+ */
 function convertToCurrentThreeMaterial(libMaterial, fallbackColor = 0xcccccc) {
     if (libMaterial && typeof libMaterial === 'object') {
+        // Extraemos las propiedades del material de la librería.
         const props = {
             color: libMaterial.color,
             map: libMaterial.map,
@@ -137,13 +145,17 @@ function convertToCurrentThreeMaterial(libMaterial, fallbackColor = 0xcccccc) {
             transparent: libMaterial.transparent,
             opacity: libMaterial.opacity,
         };
+        // Limpiamos propiedades indefinidas para no pasarlas al constructor.
         Object.keys(props).forEach(key => props[key] === undefined && delete props[key]);
+        
         const newMat = new THREE.MeshStandardMaterial(props);
+        // Copiamos la referencia para que la exportación y la UI funcionen.
         if (libMaterial.userData) {
             newMat.userData.ref = libMaterial.userData.ref;
         }
         return newMat;
     }
+    // Fallback si el material de la librería no es válido o no existe.
     return new THREE.MeshStandardMaterial({ color: fallbackColor });
 }
 
@@ -274,6 +286,7 @@ function createWall(start, end) {
     const wallGroup = new THREE.Group();
     const wallGeometry = new THREE.BoxGeometry(props.width, props.height, length);
     
+    // CORREGIDO: Usamos la función de conversión para asegurar compatibilidad.
     const wallMaterial = convertToCurrentThreeMaterial(materials.muro_estuco);
     wallMaterial.userData.ref = 'muro_estuco';
     const mainWall = new THREE.Mesh(wallGeometry, wallMaterial);
@@ -300,6 +313,7 @@ function createWall(start, end) {
 function createWindow(intersect) {
     const props = componentDefinitions[activeSubType];
     const geometry = new THREE.BoxGeometry(props.width, props.height, props.depth);
+    // CORREGIDO: Usamos la función de conversión.
     const windowMaterial = convertToCurrentThreeMaterial(materials.cristal, 0xadd8e6);
     windowMaterial.userData.ref = 'cristal';
     const windowObj = new THREE.Mesh(geometry, windowMaterial);
@@ -317,6 +331,7 @@ function createWindow(intersect) {
 function createDoor(intersect) {
     const props = componentDefinitions[activeSubType];
     const doorGroup = new THREE.Group();
+    // CORREGIDO: Usamos la función de conversión.
     const doorMaterial = convertToCurrentThreeMaterial(materials.madera_vigas, 0x8B4513);
     doorMaterial.userData.ref = 'madera_vigas';
     

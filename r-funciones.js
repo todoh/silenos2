@@ -183,10 +183,11 @@ function parseObject(objData) {
     if (objData.children && Array.isArray(objData.children)) {
         objData.children.forEach(childData => {
             const childObject = parseObject(childData);
-            if (childObject) object3D.add(childObject);
+            if (childObject) {
+                object3D.add(childObject);
+            }
         });
     }
-
     return object3D;
 }
 function createModelFromJSON(jsonData) {

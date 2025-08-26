@@ -82,7 +82,7 @@ position: absolute; left: 0%;
  font-size: 2em;
     letter-spacing: 0.07em;
     text-shadow: 0 0 15px rgba(255, 255, 255, 0.25);
-    color: white;
+    color: rgb(0, 0, 0);
     text-transform: uppercase;
     transition: opacity 0.5s ease-out;
     position: absolute;
@@ -110,9 +110,9 @@ height: 30px;
      margin-left: 0.8%;
           background-color: #bdbdbd;
         color: rgb(0, 0, 0);
-        border:  0px solid #666;
+  
         border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.089);
         transform: translateY(-1px) translateX(-50%);
         transition: transform 0.3s ease; z-index: 9998;
 }

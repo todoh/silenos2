@@ -311,7 +311,7 @@ left: 0%;
 z-index: 100000;
    top: 0%;
 height: 54px;
-background-color: black;
+background-color: rgba(0, 0, 0, 0);
 color: white;
 align-items: center;
 
