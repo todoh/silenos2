@@ -312,3 +312,29 @@ function reconstruirJsonDesdeGuionHTML(guionObject) {
         return null;
     }
 }
+
+
+
+async function generarEmbedding(text, outputDiv) {
+    if (typeof apiKey === 'undefined' || !apiKey) return null;
+    const MODEL_NAME = "gemini-embedding-001";
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:embedContent?key=${apiKey}`;
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: `models/${MODEL_NAME}`, content: { parts: [{ text }] } })
+        });
+        const data = await response.json();
+        if (data.embedding?.values) {
+            outputDiv.innerHTML += `<p>✔️ Embedding generado para "${text.substring(0, 20)}..."</p>`;
+            return data.embedding.values;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error generando embedding:", error);
+        outputDiv.innerHTML += `<p style="color: red;">❌ Fallo al generar embedding para "${text.substring(0, 20)}..."</p>`;
+        return null;
+    }
+}

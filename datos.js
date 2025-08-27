@@ -1448,6 +1448,9 @@ console.log('interaccionar');            throw new Error(`Intención '${intencio
     }
 }
 
+
+
+
 /**
  * Pipeline de generación de contenido para crear elementos desde cero.
  * @param {string} peticionResumida - La instrucción del usuario resumida por el router.
