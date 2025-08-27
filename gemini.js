@@ -314,10 +314,10 @@ function reconstruirJsonDesdeGuionHTML(guionObject) {
 }
 
 
-
-async function generarEmbedding(text, outputDiv) {
+ 
+async function generarEmbedding(text, outputDiv) { // outputDiv puede ser opcional
     if (typeof apiKey === 'undefined' || !apiKey) return null;
-    const MODEL_NAME = "gemini-embedding-001";
+    const MODEL_NAME = "gemini-embedding-001"; // Modelo actualizado recomendado
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:embedContent?key=${apiKey}`;
 
     try {
@@ -326,15 +326,27 @@ async function generarEmbedding(text, outputDiv) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ model: `models/${MODEL_NAME}`, content: { parts: [{ text }] } })
         });
+
+        if (!response.ok) {
+            const errorBody = await response.json();
+            throw new Error(`API Error: ${errorBody.error.message}`);
+        }
+
         const data = await response.json();
         if (data.embedding?.values) {
-            outputDiv.innerHTML += `<p>✔️ Embedding generado para "${text.substring(0, 20)}..."</p>`;
+            // [CAMBIO CLAVE] Solo intenta escribir en el chat si el 'outputDiv' fue proporcionado
+            if (outputDiv) {
+                outputDiv.innerHTML += `<p>✔️ Embedding generado para "${text.substring(0, 20)}..."</p>`;
+            }
             return data.embedding.values;
         }
         return null;
     } catch (error) {
         console.error("Error generando embedding:", error);
-        outputDiv.innerHTML += `<p style="color: red;">❌ Fallo al generar embedding para "${text.substring(0, 20)}..."</p>`;
+         // [CAMBIO CLAVE] Solo intenta escribir en el chat si el 'outputDiv' fue proporcionado
+        if (outputDiv) {
+            outputDiv.innerHTML += `<p style="color: red;">❌ Fallo al generar embedding para "${text.substring(0, 20)}..."</p>`;
+        }
         return null;
     }
 }

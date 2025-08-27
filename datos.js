@@ -1343,17 +1343,15 @@ function abrirModalAIDatos() {
  * asignando los datos generados al arco narrativo seleccionado en el modal.
  */
 async function procesarEntradaConIA() {
-    // --- OBTENER ENTRADA DEL USUARIO (Sin cambios) ---
+    // --- OBTENER ENTRADA DEL USUARIO ---
     const arcoSelect = document.getElementById('ia-arco-select');
     const arcoCustomInput = document.getElementById('ia-arco-custom');
     let arcoSeleccionado = 'sin_arco';
 
     if (arcoSelect) {
-        if (arcoSelect.value === 'personalizar' && arcoCustomInput) {
-            arcoSeleccionado = arcoCustomInput.value.trim() || 'sin_arco';
-        } else {
-            arcoSeleccionado = arcoSelect.value;
-        }
+        arcoSeleccionado = (arcoSelect.value === 'personalizar' && arcoCustomInput) 
+            ? arcoCustomInput.value.trim() || 'sin_arco' 
+            : arcoSelect.value;
     }
 
     const textoUsuario = document.getElementById('ia-datos-area').value.trim();
@@ -1367,21 +1365,20 @@ async function procesarEntradaConIA() {
     chatDiv.scrollTop = chatDiv.scrollHeight;
 
     try {
-        // --- PASO 1: DETERMINAR LA INTENCIÓN (Router mejorado) ---
+        // --- PASO 1: DETERMINAR LA INTENCIÓN (Router) ---
         const promptRouter = `
             Analiza la siguiente petición del usuario y clasifícala en una de estas TRES categorías:
             1. "EXTRAER": El usuario ha pegado un texto largo y quiere que extraigas información estructurada de él.
-            2. "GENERAR_TEMA": El usuario quiere que generes un conjunto de datos sobre un tema, idea u obra (Ej: "Crea 5 personajes para una historia de ciencia ficción").
-            3. "GENERAR_CONCRETO": El usuario pide crear uno o más elementos muy específicos y nombrados (Ej: "Crea un objeto mágico llamado 'La Gema del Ocaso'").
+            2. "GENERAR_TEMA": El usuario quiere que generes un conjunto de datos sobre un tema, idea u obra.
+            3. "GENERAR_CONCRETO": El usuario pide crear uno o más elementos muy específicos y nombrados.
 
             **Petición del usuario:** "${textoUsuario}"
 
             Responde ÚNICAMENTE con un objeto JSON con la siguiente estructura:
             { "intencion": "EXTRAER" | "GENERAR_TEMA" | "GENERAR_CONCRETO", "peticion_resumida": "Un resumen de lo que hay que hacer." }
         `;
-        const respuestaRouter = await llamarIAConFeedback(promptRouter, "Interpretando tu solicitud...", "gemini-2.5-flash");
-        const { intencion, peticion_resumida } = respuestaRouter;
-
+        const { intencion, peticion_resumida } = await llamarIAConFeedback(promptRouter, "Interpretando tu solicitud...", "gemini-pro");
+        
         if (!intencion || !peticion_resumida) {
             throw new Error("La IA no pudo entender la intención de tu petición. Intenta ser más claro.");
         }
@@ -1389,55 +1386,66 @@ async function procesarEntradaConIA() {
         chatDiv.innerHTML += `<p><strong>Silenos:</strong> Intención detectada: ${intencion}. Procediendo con el pipeline adecuado...</p>`;
         chatDiv.scrollTop = chatDiv.scrollHeight;
 
-        let datosTextuales = [];
+        // --- [INICIO DE LA CORRECCIÓN LÓGICA] ---
 
-        // --- BIFURCACIÓN DE PIPELINES ---
         if (intencion === 'EXTRAER') {
-console.log('extraer');
-            datosTextuales = await pipelineExtraccionInteligente(textoUsuario, chatDiv);
-        } else if (intencion === 'GENERAR_TEMA' || intencion === 'GENERAR_CONCRETO') {
-console.log('generar');
-            datosTextuales = await pipelineGeneracionContenido(peticion_resumida, chatDiv);
-        } else {
-console.log('interaccionar');            throw new Error(`Intención '${intencion}' no reconocida o sin pipeline asignado.`);
-        }
-
-        if (!datosTextuales || datosTextuales.length === 0) {
-            throw new Error("El pipeline de la IA no devolvió ningún dato estructurado. Revisa el texto de entrada o los logs.");
-        }
-        
-        chatDiv.innerHTML += `<p><strong>Silenos:</strong> Proceso finalizado. Se han obtenido ${datosTextuales.length} perfiles de datos. Creando embeddings para el arco '${arcoSeleccionado}'...</p>`;
-        chatDiv.scrollTop = chatDiv.scrollHeight;
-
-        // --- PASO FINAL: GENERAR EMBEDDINGS Y CREAR ELEMENTOS (Lógica sin cambios) ---
-        let totalCreados = 0;
-        for (const dato of datosTextuales) {
-            if (!dato.nombre || !dato.descripcion) continue;
-
-            try {
-                const embeddingVector = await generarEmbedding(dato.descripcion);
-                const datosCompletos = {
-                    ...dato,
-                    arco: arcoSeleccionado,
-                    embedding: embeddingVector || []
-                };
-                agregarPersonajeDesdeDatos(datosCompletos);
-                totalCreados++;
-            } catch (embeddingError) {
-                console.error(`Error al generar embedding para "${dato.nombre}":`, embeddingError);
-                chatDiv.innerHTML += `<p><strong>Aviso:</strong> No se pudo crear el embedding para "${dato.nombre}". Se creó el dato sin él.</p>`;
-                agregarPersonajeDesdeDatos({ ...dato, arco: arcoSeleccionado, embedding: [] });
-                totalCreados++;
+            // El pipeline de extracción ahora maneja todo el proceso internamente.
+            // Simplemente lo llamamos y esperamos a que termine.
+            const totalCreados = await pipelineExtraccionInteligente(textoUsuario, chatDiv, arcoSeleccionado);
+            if (totalCreados > 0) {
+                 mostrarError(`¡Proceso de extracción completado! Se crearon ${totalCreados} datos nuevos en el arco '${arcoSeleccionado}'.`);
+                 document.getElementById('ia-datos-area').value = '';
+            } else {
+                 mostrarError("El proceso de extracción finalizó, pero no se pudo crear ningún dato.");
             }
-        }
-        
-        if (totalCreados > 0) {
-            mostrarError(`¡Proceso completado! Se crearon ${totalCreados} datos nuevos en el arco '${arcoSeleccionado}'.`);
-            document.getElementById('ia-datos-area').value = '';
-            reinicializarFiltrosYActualizarVista();
+
+        } else if (intencion === 'GENERAR_TEMA' || intencion === 'GENERAR_CONCRETO') {
+            // El pipeline de generación devuelve un array que SÍ debemos procesar aquí.
+            const datosTextuales = await pipelineGeneracionContenido(peticion_resumida, chatDiv);
+
+            if (!datosTextuales || datosTextuales.length === 0) {
+                throw new Error("El pipeline de generación de la IA no devolvió ningún dato estructurado.");
+            }
+
+            chatDiv.innerHTML += `<p><strong>Silenos:</strong> Proceso finalizado. Se han obtenido ${datosTextuales.length} perfiles. Creando embeddings para el arco '${arcoSeleccionado}'...</p>`;
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+
+            let totalCreados = 0;
+            for (const dato of datosTextuales) {
+                if (!dato.nombre || !dato.descripcion) continue;
+
+                try {
+                    // [CAMBIO CLAVE] Pasamos 'chatDiv' como segundo argumento para los mensajes de estado.
+                    const embeddingVector = await generarEmbedding(dato.descripcion, chatDiv);
+                    const datosCompletos = {
+                        ...dato,
+                        arco: arcoSeleccionado,
+                        embedding: embeddingVector || []
+                    };
+                    agregarPersonajeDesdeDatos(datosCompletos);
+                    totalCreados++;
+                } catch (embeddingError) {
+                    console.error(`Error al generar embedding para "${dato.nombre}":`, embeddingError);
+                    chatDiv.innerHTML += `<p><strong>Aviso:</strong> No se pudo crear el embedding para "${dato.nombre}". Se creó el dato sin él.</p>`;
+                    agregarPersonajeDesdeDatos({ ...dato, arco: arcoSeleccionado, embedding: [] });
+                    totalCreados++;
+                }
+            }
+             if (totalCreados > 0) {
+                mostrarError(`¡Proceso de generación completado! Se crearon ${totalCreados} datos nuevos en el arco '${arcoSeleccionado}'.`);
+                document.getElementById('ia-datos-area').value = '';
+            } else {
+                mostrarError("El proceso de generación finalizó, pero no se pudo crear ningún dato.");
+            }
+
         } else {
-            mostrarError("El proceso finalizó, pero no se pudo crear ningún dato. Revisa el chat para más información.");
+            throw new Error(`Intención '${intencion}' no reconocida o sin pipeline asignado.`);
         }
+
+        // La actualización de la vista se hace al final, sea cual sea el pipeline.
+        reinicializarFiltrosYActualizarVista();
+
+        // --- [FIN DE LA CORRECCIÓN LÓGICA] ---
 
     } catch (error) {
         mostrarError("Ocurrió un error al procesar la solicitud con la IA: " + error.message);
