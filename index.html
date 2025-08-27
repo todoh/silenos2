@@ -1587,19 +1587,28 @@ Ejemplo 2: Un caballero valiente llamado Arthur, su espada mágica Excalibur, el
 
 
 </div>
-
-<div id="chat2" class="pantalla"  >
- 
- 
-        
-        <textarea id="prompt" placeholder="Ej: ¿Cuál es la distancia entre la Tierra y la Luna?"></textarea>
-        <button id="submitBtn" onclick="llamarAGemini()">Enviar</button>
-        <div id="response-container"></div>
- 
  
 
 
+<div id="chat2" class="pantalla">
+    
+    <select id="modelSelector">
+        <option value="gemma-3-12b-it">Gemma 3 12B IT</option>
+        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+        <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+        </select>
+    
+ <div id="file-preview-container" style="display:none; margin-top: 10px; font-family: monospace; background-color: #f0f0f0; padding: 8px; border-radius: 5px;">
+        <span id="file-name-preview"></span>
+        <button id="remove-file-btn" style="margin-left: 10px; background: #ff4d4d; color: white; border: none; border-radius: 50%; cursor: pointer; width: 20px; height: 20px;">×</button>
+    </div>
 
+    <input type="file" id="file-input" style="margin-top: 10px;">
+    
+    <textarea id="prompt" placeholder="Haz una pregunta sobre el archivo o describe algo..."></textarea>
+    <button id="submitBtn" onclick="llamarAGemini()">Enviar</button>
+    <div id="response-container"></div>
 </div>
 
 
