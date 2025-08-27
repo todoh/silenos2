@@ -1377,7 +1377,7 @@ async function procesarEntradaConIA() {
             Responde ÚNICAMENTE con un objeto JSON con la siguiente estructura:
             { "intencion": "EXTRAER" | "GENERAR_TEMA" | "GENERAR_CONCRETO", "peticion_resumida": "Un resumen de lo que hay que hacer." }
         `;
-        const { intencion, peticion_resumida } = await llamarIAConFeedback(promptRouter, "Interpretando tu solicitud...", "gemini-pro");
+        const { intencion, peticion_resumida } = await llamarIAConFeedback(promptRouter, "Interpretando tu solicitud...", "gemini-2.5-flash");
         
         if (!intencion || !peticion_resumida) {
             throw new Error("La IA no pudo entender la intención de tu petición. Intenta ser más claro.");
