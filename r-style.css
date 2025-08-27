@@ -34,7 +34,18 @@
     padding: 4px;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
-
+.brush-size-btn {
+    font-weight: bold;
+    background-color: #555;
+    border: 1px solid #777;
+    color: white;
+    width: 30px;
+    height: 30px;
+}
+.brush-size-btn.active {
+    background-color: #007bff;
+    border-color: #0056b3;
+}
 #r-contextual-menu button {
     background-color: transparent;
     border: none;

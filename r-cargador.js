@@ -82,6 +82,8 @@ let previewRenderer = null;
     return dataUrl;
 }
 
+// EN: r-cargador.js
+
 function saveWorldToCharacter() {
     const name = prompt("Introduce un nombre para este mundo:", "Mundo de Aventura");
     if (!name || name.trim() === "") {
@@ -90,6 +92,11 @@ function saveWorldToCharacter() {
     }
 
     const finalName = `${WORLD_DATA_NAME_PREFIX}${name.trim()}`;
+
+    // --- [INICIO DE LA MODIFICACIÓN CLAVE] ---
+    // 1. Capturamos el lienzo de la textura como una imagen en formato base64.
+    const textureDataUrl = editor3DState.textureCanvas.toDataURL('image/png');
+    // --- [FIN DE LA MODIFICACIÓN CLAVE] ---
 
     const dataToSave = {
         metadata: worldData.metadata,
@@ -120,6 +127,13 @@ function saveWorldToCharacter() {
             const promptVisualTextarea = existingDatoElement.querySelector('.prompt-visualh');
             if (promptVisualTextarea) {
                 promptVisualTextarea.value = worldJson;
+                
+                // --- [MODIFICACIÓN] También actualizamos la imagen al sobrescribir ---
+                const imgElement = existingDatoElement.querySelector('.personaje-visual img');
+                if (imgElement) {
+                    imgElement.src = textureDataUrl;
+                    imgElement.classList.remove('hidden');
+                }
                 alert(`¡Mundo "${name.trim()}" sobrescrito correctamente!`);
             } else {
                 alert("Error: No se pudo encontrar el campo de datos del mundo existente para sobrescribir.");
@@ -139,7 +153,8 @@ function saveWorldToCharacter() {
             promptVisual: worldJson,
             etiqueta: 'ubicacion',
             arco: 'sin_arco',
-            imagen: '',
+            // --- [MODIFICACIÓN] Asignamos la imagen capturada al nuevo dato ---
+            imagen: textureDataUrl, 
             svgContent: '',
             embedding: []
         };
@@ -152,7 +167,6 @@ function saveWorldToCharacter() {
     }
     populateWorldList();
 }
-
 
 
 function populateWorldList() {
@@ -320,9 +334,12 @@ async function importCharacterAsTool(event) {
 
 
 
-function loadWorldData(worldName) {
+async function loadWorldData(worldName) {
     if (!worldName) return;
+    
     let worldJson = null;
+    let textureImageUrl = null; // <-- Variable para guardar la URL de la imagen
+
     const allCharacters = document.querySelectorAll('#listapersonajes .personaje');
     for (const charElement of allCharacters) {
         const nameInput = charElement.querySelector('.nombreh');
@@ -330,45 +347,85 @@ function loadWorldData(worldName) {
             const promptVisual = charElement.querySelector('.prompt-visualh');
             if (promptVisual) {
                 worldJson = promptVisual.value;
-                break;
             }
+            // --- [INICIO DE LA MODIFICACIÓN CLAVE] ---
+            // Buscamos la imagen asociada a este dato.
+            const imgElement = charElement.querySelector('.personaje-visual img');
+            if (imgElement && imgElement.src && !imgElement.src.endsWith('/')) {
+                textureImageUrl = imgElement.src;
+            }
+            // --- [FIN DE LA MODIFICACIÓN CLAVE] ---
+            break;
         }
     }
 
     if (worldJson) {
         try {
-            const parsedData = JSON.parse(worldJson);
-            const loadedChunks = {};
+            // --- [MODIFICACIÓN] Carga de la textura ---
+            if (textureImageUrl) {
+                const image = new Image();
+                image.onload = () => {
+                    const ctx = editor3DState.textureContext;
+                    const canvas = editor3DState.textureCanvas;
+                    // Dibujamos la imagen cargada sobre todo el lienzo de la textura
+                    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                    // Avisamos a Three.js que la textura ha cambiado
+                    editor3DState.dynamicTexture.needsUpdate = true;
+                    console.log("Textura del mundo cargada desde la imagen del dato.");
 
-            for (const chunkId in parsedData.chunks) {
-                const chunkData = parsedData.chunks[chunkId];
-                if (Array.isArray(chunkData)) {
-                    loadedChunks[chunkId] = {
-                        groundTextureKey: chunkData[0],
-                        objects: chunkData[1] || []
-                    };
-                } else {
-                    loadedChunks[chunkId] = chunkData;
-                }
+                    // Una vez cargada la textura, procesamos los objetos
+                    cargarDatosDeChunks(worldJson);
+                };
+                image.onerror = () => {
+                    console.error("Error al cargar la imagen de la textura. Se procederá sin ella.");
+                    cargarDatosDeChunks(worldJson); // Si falla, carga los objetos igualmente
+                };
+                image.src = textureImageUrl;
+            } else {
+                // Si no hay imagen, procedemos como antes (aunque el render ya no reconstruirá el suelo)
+                console.warn("No se encontró imagen para la textura del mundo. Se cargarán solo los objetos.");
+                cargarDatosDeChunks(worldJson);
             }
-            
-            worldData = {
-                metadata: parsedData.metadata || { playerStartPosition: null },
-                chunks: loadedChunks
-            };
 
-            renderGrid();
-            alert(`¡Mundo "${worldName}" cargado!`);
         } catch (e) {
-            alert(`Error al cargar el mundo "${worldName}". El dato puede estar corrupto.`);
-            console.error("Error al parsear los datos del mundo:", e);
+            alert(`Error al procesar los datos del mundo "${worldName}".`);
+            console.error("Error al parsear o cargar los datos del mundo:", e);
         }
     } else {
         alert(`No se encontró un dato de mundo con el nombre "${worldName}".`);
     }
 }
 
+/**
+ * Función auxiliar para procesar y renderizar los chunks y objetos del mundo.
+ * @param {string} worldJson - El string JSON con los datos del mundo.
+ */
+function cargarDatosDeChunks(worldJson) {
+    const parsedData = JSON.parse(worldJson);
+    const loadedChunks = {};
 
+    for (const chunkId in parsedData.chunks) {
+        const chunkData = parsedData.chunks[chunkId];
+        if (Array.isArray(chunkData)) {
+            loadedChunks[chunkId] = {
+                groundTextureKey: chunkData[0],
+                objects: chunkData[1] || []
+            };
+        } else {
+            loadedChunks[chunkId] = chunkData;
+        }
+    }
+    
+    worldData = {
+        metadata: parsedData.metadata || { playerStartPosition: null },
+        chunks: loadedChunks
+    };
+
+    // MUY IMPORTANTE: Llamamos a render3DWorldFromData SIN que redibuje el suelo,
+    // para no sobreescribir la textura que acabamos de cargar.
+    render3DWorldFromData({ redrawGround: false });
+    alert(`¡Mundo cargado!`);
+}
 
 
 

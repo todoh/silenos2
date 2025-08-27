@@ -1,14 +1,25 @@
 // =======================================================================
 // === LÓGICA DEL EDITOR HÍBRIDO 2D/3D (UI, EVENTOS E INICIALIZACIÓN) ====
 // =======================================================================
+const brushSizes = {
+    S: 50,  // Pincel pequeño de 50px de radio
+    M: 120, // Pincel mediano de 120px de radio
+    L: 250  // Pincel grande de 250px de radio
+};
+let currentBrushSize = brushSizes.M;
+// --- CORREGIDO: Se añade la constante CHUNK_SIZE que faltaba ---
+const CHUNK_SIZE = 164;
 
 // Estado actual del editor
 let activeTool = { category: 'texture', id: 'grass' };
+
+
 const WORLD_DATA_NAME_PREFIX = 'Mundo - ';
 let editorState = {
     isPickingCoordinate: false,
     entityBeingEdited: null,
 };
+const WORLD_SPHERE_RADIUS = (GRID_WIDTH * CHUNK_SIZE) / 2.2; // Radio de nuestro "planeta"
 
 // Referencias a los elementos del DOM.
 const editorDOM = {
@@ -178,16 +189,22 @@ function cargarcanvas() {
 
 // --- MOTOR DEL EDITOR 3D ---
 
+// En r-editor.js
 function initialize3DEditor() {
     if (editor3DState.isActive) return;
     const container = editorDOM.mapGridContainer;
+    
+    // Si el contenedor no tiene tamaño, esperamos 100ms y reintentamos.
+    // Esto es más estable que el bucle de requestAnimationFrame.
     if (container.clientWidth === 0 || container.clientHeight === 0) {
-        console.warn("El contenedor del editor 3D no tiene dimensiones. Se reintentará.");
-        requestAnimationFrame(initialize3DEditor);
+        console.warn("El contenedor del editor 3D no tiene dimensiones. Se reintentará en 100ms.");
+        setTimeout(initialize3DEditor, 100);
         return;
     }
+    
     container.innerHTML = '';
-
+    
+    // ... el resto de la función se queda exactamente igual ...
     container.insertAdjacentHTML('afterbegin', `
         <div id="r-contextual-menu" style="position: absolute; top: 15px; left: 15px; background-color: rgba(40,40,40,0.8); border-radius: 8px; z-index: 200; display: none; padding: 4px; border: 1px solid rgba(255,255,255,0.2);">
             <button id="r-context-translate" class="active" title="Mover" style="background-color: #007bff; border: none; color: white; font-size: 20px; cursor: pointer; padding: 8px 12px; border-radius: 5px; transition: background-color 0.2s;">&#10021;</button>
@@ -197,8 +214,8 @@ function initialize3DEditor() {
     `);
 
     editor3DState.scene = new THREE.Scene();
-    editor3DState.scene.background = new THREE.Color(0x608da0);
-    editor3DState.scene.fog = new THREE.Fog(0x608da0, 100, 500);
+    editor3DState.scene.background = new THREE.Color(0x152238);
+    editor3DState.scene.fog = new THREE.Fog(0x152238, 150, 20000);
 
     editor3DState.renderer = new THREE.WebGLRenderer({ antialias: true });
     editor3DState.renderer.setSize(container.clientWidth, container.clientHeight);
@@ -207,96 +224,81 @@ function initialize3DEditor() {
 
     const centerX = (GRID_WIDTH * CHUNK_SIZE) / 2;
     const centerZ = (GRID_HEIGHT * CHUNK_SIZE) / 2;
+    
     editor3DState.camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 1, 2000);
-    editor3DState.camera.position.set(centerX, 120, centerZ + 80);
+    editor3DState.camera.position.set(centerX, WORLD_SPHERE_RADIUS / 2, centerZ + WORLD_SPHERE_RADIUS * 1.8);
 
     editor3DState.controls = new THREE.OrbitControls(editor3DState.camera, editor3DState.renderer.domElement);
     editor3DState.controls.target.set(centerX, 0, centerZ);
     editor3DState.controls.enableDamping = true;
-    editor3DState.controls.dampingFactor = 0.1;
-    editor3DState.controls.screenSpacePanning = false;
-    editor3DState.controls.maxPolarAngle = Math.PI / 2.1;
+    editor3DState.controls.enablePan = false;
+    
+    editor3DState.textureCanvas = document.createElement('canvas');
+    editor3DState.textureCanvas.width = 2048;
+    editor3DState.textureCanvas.height = 1024;
+    editor3DState.textureContext = editor3DState.textureCanvas.getContext('2d');
+    
+    editor3DState.dynamicTexture = new THREE.CanvasTexture(editor3DState.textureCanvas);
+    editor3DState.dynamicTexture.encoding = THREE.sRGBEncoding;
+    editor3DState.dynamicTexture.wrapS = THREE.RepeatWrapping;
+    
+    editor3DState.textureBrushes = {};
+    for (const id in tools.textures) {
+        const material = createMaterial(tools.textures[id].material);
+        if (material.map && material.map.image) {
+            editor3DState.textureBrushes[id] = material.map.image;
+        } else if (material.color) {
+            const colorCanvas = document.createElement('canvas');
+            colorCanvas.width = 64;
+            colorCanvas.height = 64;
+            const ctx = colorCanvas.getContext('2d');
+            ctx.fillStyle = material.color.getStyle();
+            ctx.fillRect(0, 0, 64, 64);
+            editor3DState.textureBrushes[id] = colorCanvas;
+        }
+    }
+    
+    const sphereGeo = new THREE.SphereGeometry(WORLD_SPHERE_RADIUS, 128, 64);
+    const sphereMat = new THREE.MeshStandardMaterial({
+        map: editor3DState.dynamicTexture,
+        roughness: 0.8,
+        metalness: 0.1
+    });
+    
+    editor3DState.worldSphere = new THREE.Mesh(sphereGeo, sphereMat);
+    editor3DState.worldSphere.position.set(centerX, 0, centerZ);
+    editor3DState.worldSphere.receiveShadow = true;
+    editor3DState.scene.add(editor3DState.worldSphere);
+    
+    editor3DState.groundObjects = [editor3DState.worldSphere];
 
-    // +++ INICIO DE LA CORRECCIÓN +++
-    // Se verifica si TransformControls existe antes de usarlo.
     if (typeof THREE.TransformControls !== 'undefined') {
         editor3DState.transformControls = new THREE.TransformControls(editor3DState.camera, editor3DState.renderer.domElement);
-        
-        editor3DState.transformControls.addEventListener('dragging-changed', function (event) {
+        editor3DState.transformControls.addEventListener('dragging-changed', (event) => {
             editor3DState.controls.enabled = !event.value;
         });
-
-        // Evento que guarda los cambios al soltar el objeto.
-        editor3DState.transformControls.addEventListener('mouseUp', function () {
-            const object = editor3DState.transformControls.object;
-            if (!object || !object.userData.sourceObject) return;
-
-            const source = object.userData.sourceObject;
-
-            // 1. Encontrar el chunk y el índice actual del objeto.
-            let oldChunkId = null;
-            let oldChunk = null;
-            let objectIndex = -1;
-
-            for (const chunkId in worldData.chunks) {
-                const chunk = worldData.chunks[chunkId];
-                const index = chunk.objects.indexOf(source);
-                if (index > -1) {
-                    oldChunkId = chunkId;
-                    oldChunk = chunk;
-                    objectIndex = index;
-                    break;
-                }
-            }
-
-            if (!oldChunk) {
-                console.error("Error de persistencia: No se pudo encontrar el objeto en ningún chunk.");
-                return;
-            }
-
-            // 2. Calcular el nuevo chunk basado en la posición 3D del objeto.
-            const newChunkX = Math.floor(object.position.x / CHUNK_SIZE);
-            const newChunkZ = Math.floor(object.position.z / CHUNK_SIZE);
-            const newChunkId = `${newChunkX}_${newChunkZ}`;
-
-            // 3. Actualizar las propiedades del objeto (posición relativa, rotación, escala).
-            source.x = object.position.x - (newChunkX * CHUNK_SIZE);
-            source.z = object.position.z - (newChunkZ * CHUNK_SIZE);
-            source.rotationY = THREE.MathUtils.radToDeg(object.rotation.y);
-            source.scale = { x: object.scale.x, y: object.scale.y, z: object.scale.z };
-
-            // 4. Si el chunk ha cambiado, mover el objeto de un array a otro.
-            if (oldChunkId !== newChunkId) {
-                oldChunk.objects.splice(objectIndex, 1);
-                if (!worldData.chunks[newChunkId]) {
-                    worldData.chunks[newChunkId] = { groundTextureKey: oldChunk.groundTextureKey, objects: [] };
-                }
-                worldData.chunks[newChunkId].objects.push(source);
-                console.log(`Objeto movido del chunk ${oldChunkId} al ${newChunkId}.`);
-            }
+        
+        editor3DState.transformControls.addEventListener('mouseUp', () => {
+             const object = editor3DState.transformControls.object;
+             if (!object || !object.userData.sourceObject) return;
+             const source = object.userData.sourceObject;
+             source.rotationY = THREE.MathUtils.radToDeg(object.rotation.y);
+             source.scale = { x: object.scale.x, y: object.scale.y, z: object.scale.z };
+             render3DWorldFromData({ redrawGround: false });
         });
-
         editor3DState.scene.add(editor3DState.transformControls);
-    } else {
-        console.warn("THREE.TransformControls no está cargado. La manipulación de objetos no funcionará.");
     }
-    // +++ FIN DE LA CORRECCIÓN +++
 
-    editor3DState.scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    editor3DState.scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    dirLight.position.set(150, 200, 100);
+    dirLight.position.set(centerX + 150, 200, centerZ + 100);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.set(2048, 2048);
-    dirLight.shadow.camera.left = -200;
-    dirLight.shadow.camera.right = 200;
-    dirLight.shadow.camera.top = 200;
-    dirLight.shadow.camera.bottom = -200;
+    dirLight.shadow.camera.left = -WORLD_SPHERE_RADIUS;
+    dirLight.shadow.camera.right = WORLD_SPHERE_RADIUS;
+    dirLight.shadow.camera.top = WORLD_SPHERE_RADIUS;
+    dirLight.shadow.camera.bottom = -WORLD_SPHERE_RADIUS;
     editor3DState.scene.add(dirLight);
-
-    const gridSize = Math.max(GRID_WIDTH, GRID_HEIGHT) * CHUNK_SIZE;
-    editor3DState.gridHelper = new THREE.GridHelper(gridSize, gridSize / CHUNK_SIZE, 0x000000, 0x888888);
-    editor3DState.gridHelper.position.set(centerX, 0.01, centerZ);
-    editor3DState.scene.add(editor3DState.gridHelper);
 
     editor3DState.scene.add(editor3DState.placeableObjects);
     render3DWorldFromData();
@@ -308,7 +310,6 @@ function initialize3DEditor() {
     editor3DState.renderer.domElement.addEventListener('click', handleEditorClick, false);
     editor3DState.renderer.domElement.addEventListener('contextmenu', handleEditorRightClick, false);
 }
-
 function animate3DEditor() {
     if (!editor3DState.isActive) return;
     requestAnimationFrame(animate3DEditor);
@@ -316,31 +317,67 @@ function animate3DEditor() {
     editor3DState.renderer.render(editor3DState.scene, editor3DState.camera);
 }
 
-async function render3DWorldFromData() {
+async function render3DWorldFromData(options = {}) {
+    const { redrawGround = true } = options; // Por defecto, siempre redibuja el suelo
+
     if (editor3DState.transformControls) editor3DState.transformControls.detach();
     
     while (editor3DState.placeableObjects.children.length > 0) {
         editor3DState.placeableObjects.remove(editor3DState.placeableObjects.children[0]);
     }
-    editor3DState.groundObjects.forEach(ground => editor3DState.scene.remove(ground));
-    editor3DState.groundObjects = [];
+    
+    // --- INICIO DE LA MODIFICACIÓN ---
+    // Este bloque completo ahora solo se ejecutará si se lo pedimos explícitamente.
+    if (redrawGround) {
+        const ctx = editor3DState.textureContext;
+        const canvasWidth = editor3DState.textureCanvas.width;
+        const canvasHeight = editor3DState.textureCanvas.height;
+        
+        const baseTexture = editor3DState.textureBrushes['water'];
+        if (baseTexture) {
+            ctx.fillStyle = ctx.createPattern(baseTexture, 'repeat');
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        } else {
+            ctx.fillStyle = '#e1e3e6ff';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        }
+        
+        const totalWorldWidth = GRID_WIDTH * CHUNK_SIZE;
+        const totalWorldHeight = GRID_HEIGHT * CHUNK_SIZE;
+
+        for (const chunkId in worldData.chunks) {
+            const chunk = worldData.chunks[chunkId];
+            const [chunkX, chunkZ] = chunkId.split('_').map(Number);
+            
+            const textureKey = chunk.groundTextureKey || 'grass';
+            const brush = editor3DState.textureBrushes[textureKey];
+            if (!brush) continue;
+            
+            const worldX = chunkX * CHUNK_SIZE;
+            const worldZ = chunkZ * CHUNK_SIZE;
+            
+            const u = worldX / totalWorldWidth;
+            const v = worldZ / totalWorldHeight;
+            
+            const canvasX = u * canvasWidth;
+            const canvasY = v * canvasHeight;
+            const canvasChunkWidth = (CHUNK_SIZE / totalWorldWidth) * canvasWidth;
+            const canvasChunkHeight = (CHUNK_SIZE / totalWorldHeight) * canvasHeight;
+            
+            ctx.drawImage(brush, canvasX, canvasY, canvasChunkWidth, canvasChunkHeight);
+        }
+        
+        editor3DState.dynamicTexture.needsUpdate = true;
+    }
+    // --- FIN DE LA MODIFICACIÓN ---
+
+    // La lógica para renderizar los OBJETOS siempre se ejecuta, que es lo que queremos.
+    const sphereCenter = editor3DState.worldSphere.position;
 
     for (const chunkId in worldData.chunks) {
         const chunk = worldData.chunks[chunkId];
-        if (!chunk || chunk.groundTextureKey === 'empty') continue;
+        if (!chunk) continue;
         const [chunkX, chunkZ] = chunkId.split('_').map(Number);
-
-        const textureData = tools.textures[chunk.groundTextureKey] || { material: { materialRef: 'terreno_cesped' } };
-        const groundMaterial = createMaterial(textureData.material);
-        if (groundMaterial.isMeshStandardMaterial) groundMaterial.roughness = 0.9;
-
-        const groundGeometry = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
-        const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
-        groundMesh.rotation.x = -Math.PI / 2;
-        groundMesh.position.set(chunkX * CHUNK_SIZE + CHUNK_SIZE / 2, 0, chunkZ * CHUNK_SIZE + CHUNK_SIZE / 2);
-        groundMesh.receiveShadow = true;
-        editor3DState.scene.add(groundMesh);
-        editor3DState.groundObjects.push(groundMesh);
 
         for (const obj of chunk.objects) {
             const entityData = tools.customEntities[obj.type] || tools.entities[obj.type];
@@ -364,23 +401,33 @@ async function render3DWorldFromData() {
             }
 
             if (modelObject) {
-                const objX = (chunkX * CHUNK_SIZE) + obj.x;
-                const objZ = (chunkZ * CHUNK_SIZE) + obj.z;
-                const box = new THREE.Box3().setFromObject(modelObject);
-                const size = box.getSize(new THREE.Vector3());
-                const yOffset = modelObject.isSprite ? size.y / 2 : -box.min.y;
-                modelObject.position.set(objX, yOffset, objZ);
+                const flatX = (chunkX * CHUNK_SIZE) + obj.x;
+                const flatZ = (chunkZ * CHUNK_SIZE) + obj.z;
+                const flatX_relative = flatX - sphereCenter.x;
+                const flatZ_relative = flatZ - sphereCenter.z;
+                const y_squared = WORLD_SPHERE_RADIUS * WORLD_SPHERE_RADIUS - (flatX_relative * flatX_relative + flatZ_relative * flatZ_relative);
+                
+                if (y_squared >= 0) {
+                    const y_on_sphere = Math.sqrt(y_squared);
+                    const positionOnSphere = new THREE.Vector3(flatX, sphereCenter.y + y_on_sphere, flatZ);
+                    const box = new THREE.Box3().setFromObject(modelObject);
+                    const yOffset = modelObject.isSprite ? box.getSize(new THREE.Vector3()).y / 2 : -box.min.y;
+                    const surfaceNormal = new THREE.Vector3().subVectors(positionOnSphere, sphereCenter).normalize();
+                    modelObject.position.copy(positionOnSphere).addScaledVector(surfaceNormal, yOffset);
+                    const upVector = new THREE.Vector3(0, 1, 0);
+                    modelObject.quaternion.setFromUnitVectors(upVector, surfaceNormal);
+                    
+                    if (obj.rotationY) {
+                         modelObject.rotateOnAxis(surfaceNormal, THREE.MathUtils.degToRad(obj.rotationY));
+                    }
+                    if (obj.scale) {
+                        modelObject.scale.set(obj.scale.x, obj.scale.y, obj.scale.z);
+                    }
 
-                if (obj.rotationY) {
-                    modelObject.rotation.y = THREE.MathUtils.degToRad(obj.rotationY);
+                    modelObject.castShadow = true;
+                    modelObject.userData.sourceObject = obj;
+                    editor3DState.placeableObjects.add(modelObject);
                 }
-                if (obj.scale) {
-                    modelObject.scale.set(obj.scale.x, obj.scale.y, obj.scale.z);
-                }
-
-                modelObject.castShadow = true;
-                modelObject.userData.sourceObject = obj;
-                editor3DState.placeableObjects.add(modelObject);
             }
         }
     }
@@ -392,11 +439,21 @@ async function render3DWorldFromData() {
         const startMarkerGeo = new THREE.ConeGeometry(1.5, 4, 12);
         const startMarkerMat = new THREE.MeshLambertMaterial({ color: 0xff4444 });
         const startMarker = new THREE.Mesh(startMarkerGeo, startMarkerMat);
-        startMarker.position.set(startX, 2, startZ);
-        editor3DState.placeableObjects.add(startMarker);
+        const flatX_relative = startX - sphereCenter.x;
+        const flatZ_relative = startZ - sphereCenter.z;
+        const y_squared = WORLD_SPHERE_RADIUS * WORLD_SPHERE_RADIUS - (flatX_relative * flatX_relative + flatZ_relative * flatZ_relative);
+        
+        if (y_squared >= 0) {
+            const y_on_sphere = Math.sqrt(y_squared);
+            const positionOnSphere = new THREE.Vector3(startX, sphereCenter.y + y_on_sphere, startZ);
+            const surfaceNormal = new THREE.Vector3().subVectors(positionOnSphere, sphereCenter).normalize();
+            startMarker.position.copy(positionOnSphere).addScaledVector(surfaceNormal, 2);
+            const upVector = new THREE.Vector3(0, 1, 0);
+            startMarker.quaternion.setFromUnitVectors(upVector, surfaceNormal);
+            editor3DState.placeableObjects.add(startMarker);
+        }
     }
 }
-
 function handleEditorResize() {
     if (!editor3DState.isActive) return;
     const container = editorDOM.mapGridContainer;
@@ -408,11 +465,13 @@ function handleEditorResize() {
 function handleEditorClick(event) {
     if (event.button !== 0) return;
 
+    const container = editorDOM.mapGridContainer;
+    const rect = container.getBoundingClientRect();
+    const mouse = new THREE.Vector2(((event.clientX - rect.left) / container.clientWidth) * 2 - 1, -((event.clientY - rect.top) / container.clientHeight) * 2 + 1);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, editor3DState.camera);
+
     if (editorState.isPickingCoordinate) {
-        const rect = editorDOM.mapGridContainer.getBoundingClientRect();
-        const mouse = new THREE.Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(mouse, editor3DState.camera);
         const intersects = raycaster.intersectObjects(editor3DState.groundObjects);
         if (intersects.length > 0) {
             const point = intersects[0].point;
@@ -434,48 +493,83 @@ function handleEditorClick(event) {
         return;
     }
 
-    const container = editorDOM.mapGridContainer;
-    const rect = container.getBoundingClientRect();
-    const mouse = new THREE.Vector2(((event.clientX - rect.left) / container.clientWidth) * 2 - 1, -((event.clientY - rect.top) / container.clientHeight) * 2 + 1);
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, editor3DState.camera);
-
     const contextMenu = document.getElementById('r-contextual-menu');
     if (activeTool.id === 'selector') {
-        if (!editor3DState.transformControls) return; 
         const intersectsObjects = raycaster.intersectObjects(editor3DState.placeableObjects.children, true);
         if (intersectsObjects.length > 0) {
             let mainParent = intersectsObjects[0].object;
-            while (mainParent.parent && mainParent.parent !== editor3DState.placeableObjects) {
-                mainParent = mainParent.parent;
-            }
+            while (mainParent.parent && mainParent.parent !== editor3DState.placeableObjects) mainParent = mainParent.parent;
             editor3DState.transformControls.attach(mainParent);
             if (contextMenu) contextMenu.style.display = 'block';
         } else {
             editor3DState.transformControls.detach();
             if (contextMenu) contextMenu.style.display = 'none';
         }
-        return; 
+        return;
     }
     
-    const intersects = raycaster.intersectObjects(editor3DState.groundObjects);
+    const intersects = raycaster.intersectObjects(editor3DState.groundObjects, true);
 
     if (intersects.length > 0) {
-        const point = intersects[0].point;
-        const chunkX = Math.floor(point.x / CHUNK_SIZE);
-        const chunkZ = Math.floor(point.z / CHUNK_SIZE);
+        const intersection = intersects[0];
+        const point = intersection.point;
+        const worldX = point.x;
+        const worldZ = point.z;
+        const chunkX = Math.floor(worldX / CHUNK_SIZE);
+        const chunkZ = Math.floor(worldZ / CHUNK_SIZE);
         const chunkId = `${chunkX}_${chunkZ}`;
+        
         if (!worldData.chunks[chunkId]) {
             worldData.chunks[chunkId] = { groundTextureKey: 'grass', objects: [] };
         }
         const chunk = worldData.chunks[chunkId];
-        const posX_in_chunk = point.x - (chunkX * CHUNK_SIZE);
-        const posZ_in_chunk = point.z - (chunkZ * CHUNK_SIZE);
-
+        
         if (activeTool.category === 'texture') {
-            chunk.groundTextureKey = activeTool.id;
+            const brush = editor3DState.textureBrushes[activeTool.id];
+        if (!brush || !intersection.uv) return; // Salimos si no hay pincel o coordenadas UV
+
+        // 1. Obtenemos el contexto del lienzo 2D que sirve de textura
+        const ctx = editor3DState.textureContext;
+
+        // 2. Convertimos las coordenadas UV (de 0 a 1) a coordenadas de píxeles en nuestro lienzo
+        const canvasX = intersection.uv.x * editor3DState.textureCanvas.width;
+        const canvasY = (1 - intersection.uv.y) * editor3DState.textureCanvas.height;
+
+        // 3. Dibujamos la textura seleccionada en la posición del clic
+        // Usamos currentBrushSize para definir el tamaño del "pincelazo"
+        ctx.save(); // Guardamos el estado del canvas
+        ctx.beginPath();
+        // Creamos un área circular para que el pintado sea redondo
+        ctx.arc(canvasX, canvasY, currentBrushSize / 2, 0, Math.PI * 2, true);
+        ctx.closePath();
+        ctx.clip(); // Usamos el círculo como máscara
+
+        // Dibujamos la textura del pincel, repetida para llenar el área
+        const pattern = ctx.createPattern(brush, 'repeat');
+        ctx.fillStyle = pattern;
+        ctx.fillRect(0, 0, editor3DState.textureCanvas.width, editor3DState.textureCanvas.height);
+        
+        ctx.restore(); // Restauramos el estado del canvas
+
+        // 4. ¡MUY IMPORTANTE! Avisamos a Three.js que la textura ha cambiado
+        // Esto hace que la GPU actualice la apariencia del planeta.
+        editor3DState.dynamicTexture.needsUpdate = true;
+        
+        // La lógica de chunks ya no es necesaria para el pintado, pero sí para la persistencia.
+        // Opcional: Guardar qué textura se usó en el chunk para poder reconstruirlo al cargar.
+        const chunkX = Math.floor(point.x / CHUNK_SIZE);
+        const chunkZ = Math.floor(point.z / CHUNK_SIZE);
+        const chunkId = `${chunkX}_${chunkZ}`;
+        if (worldData.chunks[chunkId]) {
+            // Podrías guardar la última textura usada si quieres
+            // worldData.chunks[chunkId].lastPaintedTexture = activeTool.id;
+        }
+            
         } else if (activeTool.category === 'entity' || activeTool.category === 'customEntity') {
-             if (activeTool.id === 'eraser') {
+            const posX_in_chunk = worldX - (chunkX * CHUNK_SIZE);
+            const posZ_in_chunk = worldZ - (chunkZ * CHUNK_SIZE);
+
+            if (activeTool.id === 'eraser') {
                 const intersectsEraser = raycaster.intersectObjects(editor3DState.placeableObjects.children, true);
                 if (intersectsEraser.length > 0) {
                     let objectToDelete = intersectsEraser[0].object;
@@ -508,11 +602,14 @@ function handleEditorClick(event) {
                 }
                 chunk.objects.push(newObject);
             }
+            
+            // --- INICIO DE LA MODIFICACIÓN ---
+            // Llamamos a la función con la nueva opción para NO redibujar el suelo.
+            render3DWorldFromData({ redrawGround: false }); 
+            // --- FIN DE LA MODIFICACIÓN ---
         }
-        render3DWorldFromData();
     }
 }
-
 function handleEditorRightClick(event) {
     event.preventDefault();
     if (activeTool.id !== 'selector') return;
@@ -604,8 +701,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (editorDOM.saveToCharacterButton) {
         editorDOM.saveToCharacterButton.addEventListener('click', saveWorldToCharacter);
     }
-    editorDOM.previewButton.addEventListener('click', startPreview);
-    editorDOM.previewModalCloseBtn.addEventListener('click', stopPreview);
+editorDOM.previewButton.addEventListener('click', () => {
+    startPreview(worldData, editor3DState.textureCanvas);
+});    editorDOM.previewModalCloseBtn.addEventListener('click', stopPreview);
 
     if (editorDOM.loadWorldSelect) {
         editorDOM.loadWorldSelect.addEventListener('change', async (event) => {
@@ -644,7 +742,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             btn.style.backgroundColor = 'transparent';
         });
         target.classList.add('active');
-        target.style.backgroundColor = '#007bff';
+        target.style.backgroundColor = '#fcfcfcff';
 
         if (editor3DState.transformControls) {
             if (target.id === 'r-context-translate') editor3DState.transformControls.setMode('translate');
@@ -652,4 +750,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (target.id === 'r-context-scale') editor3DState.transformControls.setMode('scale');
         }
     });
+
+  const brushSizeButtons = document.querySelectorAll('.brush-size-btn');
+    brushSizeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Quita la clase 'active' de todos los botones
+            brushSizeButtons.forEach(btn => btn.classList.remove('active'));
+            // Añade 'active' al botón pulsado
+            button.classList.add('active');
+            // Actualiza el tamaño del pincel según el data-size del botón
+            const sizeKey = button.dataset.size; // '50', '120', '250'
+            currentBrushSize = parseInt(sizeKey, 10);
+            console.log(`Tamaño del pincel cambiado a: ${currentBrushSize}px`);
+        });
+    });
+
 });

@@ -2,8 +2,8 @@
 // === CONSTANTES Y DATOS DEL MUNDO (ACTUALIZADO) ========================
 // =======================================================================
 
-const GRID_WIDTH = 40;
-const GRID_HEIGHT = 30;
+const GRID_WIDTH = 20;
+const GRID_HEIGHT = 20;
 const SUBGRID_SIZE = 10;
 
 // Almacena todos los datos del mapa y la posición inicial del jugador.
