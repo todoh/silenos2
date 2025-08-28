@@ -12,7 +12,7 @@ let keyState = {};
 let rotationStopHandler = null;
 
 // --- CONSTANTES DEL MUNDO DEL PREVIEW ---
-const PREVIEW_CHUNK_SIZE = 164;
+const PREVIEW_CHUNK_SIZE = 222;
 // El radio debe coincidir con el del editor para que la curvatura sea la misma
 const PREVIEW_WORLD_SPHERE_RADIUS = (GRID_WIDTH * PREVIEW_CHUNK_SIZE) / 2.2; 
 const PLANET_CENTER_VEC3 = new THREE.Vector3((GRID_WIDTH * PREVIEW_CHUNK_SIZE) / 2, 0, (GRID_HEIGHT * PREVIEW_CHUNK_SIZE) / 2);
@@ -129,6 +129,9 @@ cameraController = {
 };
     keyState = {};
 }
+ 
+// EN: r-preview-3d.js (REEMPLAZA ESTA FUNCIÓN)
+
 function startPreview(data, editorCanvas) {
     if (previewState.isActive) return;
 
@@ -136,21 +139,25 @@ function startPreview(data, editorCanvas) {
     if (!container) return;
     
     container.innerHTML = '';
-    document.getElementById('r-preview-modal').style.display = 'flex';
+    
+    // Mostramos el modal si existe en el entorno del editor
+    const previewModal = document.getElementById('r-preview-modal');
+    if (previewModal) {
+        previewModal.style.display = 'flex';
+    }
     
     resetStateObjects();
 
     if (container.clientWidth === 0 || container.clientHeight === 0) {
-         setTimeout(() => startPreview(data), 100); // Reintenta si el contenedor no es visible aún
+         setTimeout(() => startPreview(data, editorCanvas), 100);
          return;
     }
 
     previewState.scene = new THREE.Scene();
-    // --- CORRECCIÓN: Se añade niebla para un efecto más atmosférico ---
-    const fogColor = 0x152238; // Mismo color que el fondo para una transición suave
+    const fogColor = 0x152238;
     previewState.scene.background = new THREE.Color(fogColor);
-    // Puedes ajustar los valores 'near' (150) y 'far' (2000) para cambiar la densidad
-    previewState.scene.fog = new THREE.Fog(fogColor, 150, 1000);
+    previewState.scene.fog = new THREE.Fog(fogColor, 150, 2000);
+
     previewState.camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 5000);
     previewState.renderer = new THREE.WebGLRenderer({ antialias: true });
     previewState.renderer.setSize(container.clientWidth, container.clientHeight);
@@ -180,19 +187,25 @@ function startPreview(data, editorCanvas) {
     playerController.mesh.position.copy(startPosition);
 
     previewState.scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    
+    // --- INICIO DE LA CORRECCIÓN DE LA LUZ ---
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
     dirLight.position.set(PLANET_CENTER_VEC3.x + 150, 200, PLANET_CENTER_VEC3.z + 100);
+    
+    // ¡CLAVE! Hacemos que la luz apunte al centro del planeta.
+    dirLight.target.position.copy(PLANET_CENTER_VEC3);
+    
+    // Añadimos tanto la luz como su objetivo a la escena.
     previewState.scene.add(dirLight);
+    previewState.scene.add(dirLight.target);
+    // --- FIN DE LA CORRECCIÓN DE LA LUZ ---
 
     loadWorldFromData(data, startPosition, editorCanvas);
 
-     const playerPosition = playerController.mesh.position;
+    const playerPosition = playerController.mesh.position;
     const startNormal = new THREE.Vector3().subVectors(playerPosition, PLANET_CENTER_VEC3).normalize();
-    
-    // 1. Creamos el mismo objetivo elevado que en updateCamera
     const cameraTarget = playerPosition.clone().addScaledVector(startNormal, 1.6);
     
-    // 2. Calculamos la posición inicial de la cámara
     const offset = new THREE.Vector3(0, 0, cameraController.distance);
     const euler = new THREE.Euler(cameraController.angle, cameraController.horizontalAngle, 0, 'YXZ');
     offset.applyEuler(euler);
@@ -200,7 +213,6 @@ function startPreview(data, editorCanvas) {
     offset.applyQuaternion(alignment);
     const idealPosition = playerPosition.clone().add(offset);
 
-    // 3. Aplicamos la posición, la orientación (up) y el punto de mira (lookAt) CORRECTOS
     previewState.camera.position.copy(idealPosition);
     previewState.camera.up.copy(startNormal);
     previewState.camera.lookAt(cameraTarget);
@@ -223,81 +235,51 @@ function stopPreview() {
 }
 
 function loadWorldFromData(data, startPosition, editorCanvas) {
-    // --- LÓGICA DE CARGA DE TEXTURA MEJORADA ---
-
     let finalTextureCanvas;
 
-    // Si recibimos el lienzo pintado desde el editor, lo usamos directamente.
-    // Esta es la ruta principal y más eficiente.
+    // Si recibimos un canvas (desde el editor en modo preview), lo usamos.
     if (editorCanvas) {
         console.log("Preview: Usando lienzo renderizado por el editor.");
         finalTextureCanvas = editorCanvas;
-    } 
-    // Si no, reconstruimos la textura a partir de los datos básicos.
-    // Esto sirve como fallback para que no se rompa nada.
+    }
+    // Si NO recibimos un canvas (en el HTML exportado), creamos uno base.
+    // Este lienzo será pintado posteriormente por el script 'launcher'.
     else {
-        console.warn("Preview: No se recibió canvas. Reconstruyendo textura desde datos de chunks.");
-        const reconstructedCanvas = document.createElement('canvas');
-        reconstructedCanvas.width = 2048;
-        reconstructedCanvas.height = 1024;
-        const ctx = reconstructedCanvas.getContext('2d');
-        
-        // Cargamos los pinceles/texturas necesarios para la reconstrucción
-        const textureBrushes = {};
-        Object.keys(tools.textures).forEach(id => {
-            const material = createMaterial(tools.textures[id].material);
-            if (material.map && material.map.image) {
-                textureBrushes[id] = material.map.image;
-            }
-        });
-
-        ctx.fillStyle = '#7db4dfff'; // Color base
-        ctx.fillRect(0, 0, reconstructedCanvas.width, reconstructedCanvas.height);
-
-        if (data && data.chunks) {
-            const totalWorldWidth = GRID_WIDTH * PREVIEW_CHUNK_SIZE;
-            const totalWorldHeight = GRID_HEIGHT * PREVIEW_CHUNK_SIZE;
-
-            for (const chunkId in data.chunks) {
-                const chunk = data.chunks[chunkId];
-                if (!chunk) continue;
-                const [chunkX, chunkZ] = chunkId.split('_').map(Number);
-                const textureKey = chunk.groundTextureKey || 'grass';
-                const brush = textureBrushes[textureKey];
-                if (brush) {
-                    const u = (chunkX * PREVIEW_CHUNK_SIZE) / totalWorldWidth;
-                    const v = (chunkZ * PREVIEW_CHUNK_SIZE) / totalWorldHeight;
-                    const canvasX = u * reconstructedCanvas.width;
-                    const canvasY = v * reconstructedCanvas.height;
-                    const canvasChunkWidth = (PREVIEW_CHUNK_SIZE / totalWorldWidth) * reconstructedCanvas.width;
-                    const canvasChunkHeight = (PREVIEW_CHUNK_SIZE / totalWorldHeight) * reconstructedCanvas.height;
-                    ctx.drawImage(brush, canvasX, canvasY, canvasChunkWidth, canvasChunkHeight);
-                }
-            }
-        }
-        finalTextureCanvas = reconstructedCanvas;
+        console.log("Preview: Creando lienzo de textura base. Esperando carga de imagen externa.");
+        const baseCanvas = document.createElement('canvas');
+        baseCanvas.width = 2048;
+        baseCanvas.height = 1024;
+        const ctx = baseCanvas.getContext('2d');
+        // Dibuja un color base simple (ej. agua) como placeholder.
+        ctx.fillStyle = '#3B698B';
+        ctx.fillRect(0, 0, baseCanvas.width, baseCanvas.height);
+        finalTextureCanvas = baseCanvas;
     }
 
-    // Creamos la textura de Three.js a partir del lienzo final.
-    const dynamicTexture = new THREE.CanvasTexture(finalTextureCanvas);
+    // --- ¡AÑADIDO IMPORTANTE! ---
+    // Guardamos las referencias en el estado del preview para que el launcher pueda acceder a ellas.
+    previewState.textureCanvas = finalTextureCanvas;
+
+    // Usamos THREE.Texture en lugar de CanvasTexture para mayor compatibilidad con la carga estática.
+    const dynamicTexture = new THREE.Texture(finalTextureCanvas);
     dynamicTexture.encoding = THREE.sRGBEncoding;
-    dynamicTexture.needsUpdate = true; // ¡Importante para que la textura se muestre!
+    dynamicTexture.needsUpdate = true;
 
-    // Usamos la textura dinámica para crear el material de la esfera.
+    // Guardamos también la referencia a la textura
+    previewState.dynamicTexture = dynamicTexture;
+    // --- FIN DEL AÑADIDO ---
+
     const sphereGeo = new THREE.SphereGeometry(PREVIEW_WORLD_SPHERE_RADIUS, 128, 64);
-    const sphereMat = new THREE.MeshStandardMaterial({ map: dynamicTexture, roughness: 0.9 });
+    const sphereMat = new THREE.MeshStandardMaterial({ map: dynamicTexture, roughness: 0.9, metalness: 0.1 });
     previewState.worldSphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
-
     previewState.worldSphereMesh.position.copy(PLANET_CENTER_VEC3);
     previewState.worldSphereMesh.receiveShadow = true;
     previewState.scene.add(previewState.worldSphereMesh);
 
     // --- El resto de la función (físicas y colocación de objetos) permanece igual ---
-
     const groundShape = new CANNON.Sphere(PREVIEW_WORLD_SPHERE_RADIUS);
     const groundBody = new CANNON.Body({ mass: 0, position: PLANET_CENTER_CANNON, shape: groundShape, material: previewState.physicsMaterials.groundMaterial });
     previewState.physicsWorld.addBody(groundBody);
-
     const playerShape = new CANNON.Sphere(playerController.radius);
     playerController.physicsBody = new CANNON.Body({
         mass: 70, position: new CANNON.Vec3().copy(startPosition), shape: playerShape,
@@ -305,16 +287,14 @@ function loadWorldFromData(data, startPosition, editorCanvas) {
     });
     previewState.physicsWorld.addBody(playerController.physicsBody);
 
-    if (data && data.chunks) {
+    if (data?.chunks) {
         for (const chunkId in data.chunks) {
             const chunk = data.chunks[chunkId];
-            if (!chunk || !chunk.objects) continue;
+            if (!chunk?.objects) continue;
             const [chunkX, chunkZ] = chunkId.split('_').map(Number);
-
             for (const obj of chunk.objects) {
                 const entityData = tools.customEntities[obj.type] || tools.entities[obj.type];
                 if (!entityData) continue;
-
                 let modelObject = null;
                 if (entityData.modelType === 'json3d' && entityData.icon) {
                     modelObject = createModelFromJSON(entityData.icon);
@@ -331,36 +311,20 @@ function loadWorldFromData(data, startPosition, editorCanvas) {
                 } else if (entityData.model) {
                     modelObject = createModelFromJSON(entityData.model);
                 }
-
                 if (modelObject) {
                     const flatX = (chunkX * PREVIEW_CHUNK_SIZE) + obj.x;
                     const flatZ = (chunkZ * PREVIEW_CHUNK_SIZE) + obj.z;
-                    const flatX_relative = flatX - PLANET_CENTER_VEC3.x;
-                    const flatZ_relative = flatZ - PLANET_CENTER_VEC3.z;
-                    const y_squared = PREVIEW_WORLD_SPHERE_RADIUS * PREVIEW_WORLD_SPHERE_RADIUS - (flatX_relative * flatX_relative + flatZ_relative * flatZ_relative);
-                    
-                    if (y_squared >= 0) {
-                        const y_on_sphere = Math.sqrt(y_squared);
-                        const positionOnSphere = new THREE.Vector3(flatX, PLANET_CENTER_VEC3.y + y_on_sphere, flatZ);
-                        const box = new THREE.Box3().setFromObject(modelObject);
-                        const yOffset = modelObject.isSprite ? box.getSize(new THREE.Vector3()).y / 2 : -box.min.y;
-                        const surfaceNormal = new THREE.Vector3().subVectors(positionOnSphere, PLANET_CENTER_VEC3).normalize();
-                        
-                        modelObject.position.copy(positionOnSphere).addScaledVector(surfaceNormal, yOffset);
-                        
-                        const upVector = new THREE.Vector3(0, 1, 0);
-                        modelObject.quaternion.setFromUnitVectors(upVector, surfaceNormal);
-                        
-                        if (obj.rotationY) {
-                             modelObject.rotateOnAxis(surfaceNormal, THREE.MathUtils.degToRad(obj.rotationY));
-                        }
-                        if (obj.scale) {
-                            modelObject.scale.set(obj.scale.x, obj.scale.y, obj.scale.z);
-                        }
-
-                        modelObject.castShadow = true;
-                        previewState.scene.add(modelObject);
-                    }
+                    const positionOnSphere = getPositionOnSphere(flatX, flatZ);
+                    const box = new THREE.Box3().setFromObject(modelObject);
+                    const yOffset = modelObject.isSprite ? box.getSize(new THREE.Vector3()).y / 2 : -box.min.y;
+                    const surfaceNormal = new THREE.Vector3().subVectors(positionOnSphere, PLANET_CENTER_VEC3).normalize();
+                    modelObject.position.copy(positionOnSphere).addScaledVector(surfaceNormal, yOffset);
+                    const upVector = new THREE.Vector3(0, 1, 0);
+                    modelObject.quaternion.setFromUnitVectors(upVector, surfaceNormal);
+                    if (obj.rotationY) modelObject.rotateOnAxis(surfaceNormal, THREE.MathUtils.degToRad(obj.rotationY));
+                    if (obj.scale) modelObject.scale.set(obj.scale.x, obj.scale.y, obj.scale.z);
+                    modelObject.castShadow = true;
+                    previewState.scene.add(modelObject);
                 }
             }
         }

@@ -74,6 +74,7 @@
     left: 50% !important;
     position: absolute;
     transform: translateX(-50%) !important;
+    background-color: transparent !important;
 }
 
 #r-map-grid-container {
@@ -596,7 +597,7 @@ object-fit: contain
 
  /* Estilos para el nuevo lienzo de dibujado */
 #r-map-canvas {
-    background-color: #1c1e21;
+    background-color: transparent;
     cursor: crosshair;
     /* La transformación para el zoom se aplicará aquí desde JS */
 }

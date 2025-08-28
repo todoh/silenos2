@@ -20,8 +20,8 @@ let _compressImageForSave = (imagenSrc) => {
         let img = new Image();
         img.crossOrigin = "Anonymous";
         img.onload = function() {
-            const maxWidth = 1920,
-                maxHeight = 1920;
+            const maxWidth = 4920,
+                maxHeight = 4920;
             let width = img.width,
                 height = img.height;
 

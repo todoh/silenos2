@@ -8,10 +8,10 @@ const brushSizes = {
 };
 let currentBrushSize = brushSizes.M;
 // --- CORREGIDO: Se añade la constante CHUNK_SIZE que faltaba ---
-const CHUNK_SIZE = 164;
+const CHUNK_SIZE = 222;
 
 // Estado actual del editor
-let activeTool = { category: 'texture', id: 'grass' };
+let activeTool = { category: 'entity', id: 'selector' };
 
 
 const WORLD_DATA_NAME_PREFIX = 'Mundo - ';
@@ -46,7 +46,7 @@ const editorDOM = {
 
 // Estado para el visor 3D del editor
 let editor3DState = {
-    isActive: false,
+    isActive: false,isPainting: false, 
     scene: null,
     camera: null,
     renderer: null,
@@ -214,10 +214,10 @@ function initialize3DEditor() {
     `);
 
     editor3DState.scene = new THREE.Scene();
-    editor3DState.scene.background = new THREE.Color(0x152238);
+    editor3DState.scene.background = null; // Fondo transparente
     editor3DState.scene.fog = new THREE.Fog(0x152238, 150, 20000);
 
-    editor3DState.renderer = new THREE.WebGLRenderer({ antialias: true });
+    editor3DState.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // Habilitar transparencia
     editor3DState.renderer.setSize(container.clientWidth, container.clientHeight);
     editor3DState.renderer.shadowMap.enabled = true;
     container.appendChild(editor3DState.renderer.domElement);
@@ -232,10 +232,15 @@ function initialize3DEditor() {
     editor3DState.controls.target.set(centerX, 0, centerZ);
     editor3DState.controls.enableDamping = true;
     editor3DState.controls.enablePan = false;
-    
+       // Reasignamos los botones del ratón para los controles de la cámara.
+    editor3DState.controls.mouseButtons = {
+        LEFT: null, // Anulamos el botón izquierdo para que no mueva la cámara.
+        MIDDLE: THREE.MOUSE.DOLLY, // La rueda seguirá haciendo zoom.
+        RIGHT: THREE.MOUSE.ROTATE // Asignamos la rotación al botón derecho.
+    };
     editor3DState.textureCanvas = document.createElement('canvas');
-    editor3DState.textureCanvas.width = 2048;
-    editor3DState.textureCanvas.height = 1024;
+    editor3DState.textureCanvas.width = 4948;
+    editor3DState.textureCanvas.height = 2474;
     editor3DState.textureContext = editor3DState.textureCanvas.getContext('2d');
     
     editor3DState.dynamicTexture = new THREE.CanvasTexture(editor3DState.textureCanvas);
@@ -249,11 +254,11 @@ function initialize3DEditor() {
             editor3DState.textureBrushes[id] = material.map.image;
         } else if (material.color) {
             const colorCanvas = document.createElement('canvas');
-            colorCanvas.width = 64;
-            colorCanvas.height = 64;
+            colorCanvas.width = 128;
+            colorCanvas.height = 128;
             const ctx = colorCanvas.getContext('2d');
             ctx.fillStyle = material.color.getStyle();
-            ctx.fillRect(0, 0, 64, 64);
+            ctx.fillRect(0, 0, 128, 128);
             editor3DState.textureBrushes[id] = colorCanvas;
         }
     }

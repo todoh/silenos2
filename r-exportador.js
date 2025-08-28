@@ -1,39 +1,43 @@
 async function exportStandaloneHTML() {
     try {
-        // --- PASO 1: Ponerle nombre al archivo (Sin cambios) ---
         const worldNameRaw = document.getElementById('r-load-world-select')?.value || 'Mi-Mundo';
         const worldName = worldNameRaw.replace(WORLD_DATA_NAME_PREFIX, '').replace(/\s+/g, '-');
         const fileName = `${worldName}.html`;
 
-        alert(`Iniciando exportación MÍNIMA (solo terreno y controles) de "${fileName}".`);
+        alert(`Iniciando exportación de "${fileName}".`);
 
-        // --- PASO 2: Recolectar y Limpiar el Código (SIMPLIFICADO) ---
-        // Obtenemos el visor 3D y le aplicamos solo los parches del modal.
+        // Obtenemos el contenido de los scripts necesarios
         let rPreview3dJsContent = await fetch(document.querySelector('script[src*="r-preview-3d.js"]').src).then(res => res.text());
+        // Eliminamos las llamadas al modal que no existen en el exportado
         rPreview3dJsContent = rPreview3dJsContent
             .replace("document.getElementById('r-preview-modal').style.display = 'flex';", "")
             .replace("document.getElementById('r-preview-modal').style.display = 'none';", "");
-        // NO incluimos la función createModelFromJSON porque no habrá entidades que crear.
 
-        // --- PASO 3: Preparar los Datos (SIMPLIFICADO) ---
-        // Solo necesitamos las texturas para que el suelo se pinte correctamente.
+        const rFuncionesJsContent = await fetch(document.querySelector('script[src*="r-funciones.js"]').src).then(res => res.text());
+
+        // Preparamos los datos del mundo para la exportación
         const toolsForExport = {
             textures: tools.textures,
-            entities: {},       // Objeto vacío para que el script del visor no falle
-            customEntities: {}  // Objeto vacío por la misma razón
+            entities: {},
+            customEntities: {}
         };
-
-        // Serializamos los datos del mundo (terreno) y las texturas.
         const worldDataJson = JSON.stringify(worldData, null, 2);
         const toolsJson = JSON.stringify(toolsForExport, null, 2);
 
-        // --- PASO 4: Construir la Página Web Final (SIMPLIFICADO) ---
+        // Capturamos la textura del canvas del editor como una imagen Data URL
+        const editorTextureCanvas = editor3DState.textureCanvas;
+        if (!editorTextureCanvas) {
+            throw new Error("Error crítico: No se pudo encontrar el canvas de la textura del editor para exportar.");
+        }
+        const textureDataUrl = editorTextureCanvas.toDataURL('image/png');
+
+        // Construimos el archivo HTML final
         const htmlTemplate = `
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Visor de Mundo (Terreno): ${worldName}</title>
+    <title>Visor de Mundo: ${worldName}</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; }
         #r-game-container { width: 100%; height: 100%; }
@@ -44,33 +48,73 @@ async function exportStandaloneHTML() {
     <div id="r-game-container"></div>
     <div class="info-box">Mundo: ${worldName}</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/three@0.138.3/build/three.min.js"><\/script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"><\/script>
 
     <script id="exported-data">
-        // Inyectamos solo las constantes y datos necesarios para el terreno.
-        const SUBGRID_SIZE = ${SUBGRID_SIZE}; // r-preview-3d.js lo necesita.
+        const GRID_WIDTH = ${GRID_WIDTH};
+        const GRID_HEIGHT = ${GRID_HEIGHT};
+        const SUBGRID_SIZE = 10;
         let worldData = ${worldDataJson};
         let tools = ${toolsJson};
         
-        // NO inyectamos createModelFromJSON.
-        function createModelFromJSON(jsonData) { return new THREE.Group(); } // Función 'dummy' para evitar errores.
+        // La textura viaja como un string de datos.
+        const exportedTextureDataUrl = '${textureDataUrl}';
+
+        // Mockup de funciones que no se necesitan en el exportado pero son referenciadas
+        function createModelFromJSON(jsonData) { return new THREE.Group(); }
     <\/script>
 
-    <script id="r-preview-3d-script">
-        // Inyectamos el visor, que renderizará el terreno y los controles del jugador.
-        ${rPreview3dJsContent}
-    <\/script>
+    <script id="r-funciones-script">${rFuncionesJsContent}<\/script>
+    <script id="r-preview-3d-script">${rPreview3dJsContent}<\/script>
 
+    <!-- ================================================================== -->
+    <!-- === SCRIPT LANZADOR CORREGIDO ==================================== -->
+    <!-- ================================================================== -->
     <script id="launcher">
         window.addEventListener('load', () => {
-            console.log("Iniciando vista previa del mundo exportado (solo terreno)...");
-            startPreview();
+            console.log("Iniciando vista previa del mundo exportado...");
+            if (typeof inicializarLibreriaMateriales === 'function') {
+                inicializarLibreriaMateriales();
+            }
+
+            // 1. Inicia el visor 3D INMEDIATAMENTE pero sin textura pre-cargada (pasando null).
+            // Esto crea la esfera, las luces y, lo más importante, el canvas interno del visor (previewState.textureCanvas).
+            startPreview(worldData, null);
+
+            // 2. Ahora que el visor está listo, cargamos la imagen de la textura.
+            const textureImage = new Image();
+            textureImage.onload = function() {
+                console.log("Textura decodificada. Aplicando al visor 3D existente...");
+
+                // 3. Obtenemos acceso directo al canvas y al contexto del propio visor 3D.
+                if (!previewState || !previewState.textureCanvas) {
+                    console.error("Error crítico: El canvas del visor 3D no se ha inicializado.");
+                    return;
+                }
+                const previewCanvas = previewState.textureCanvas;
+                const previewCtx = previewCanvas.getContext('2d');
+
+                // 4. Dibujamos la imagen cargada DIRECTAMENTE sobre el canvas del visor.
+                previewCtx.drawImage(this, 0, 0, previewCanvas.width, previewCanvas.height);
+                
+                // 5. ¡CRUCIAL! Avisamos a Three.js que la textura ha cambiado y debe actualizarse en la GPU.
+                if (previewState.dynamicTexture) {
+                    previewState.dynamicTexture.needsUpdate = true;
+                }
+            };
+            textureImage.onerror = function() {
+                console.error("Fallo al cargar la textura del mundo.");
+            };
+            
+            // 6. Asignamos la Data URL a la imagen para que comience la carga.
+            textureImage.src = exportedTextureDataUrl;
         });
     <\/script>
 </body>
 </html>`;
 
-        // --- PASO 5: Forzar la Descarga (Sin cambios) ---
+        // Descargamos el archivo
         const blob = new Blob([htmlTemplate], { type: 'text/html' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -83,10 +127,7 @@ async function exportStandaloneHTML() {
         alert(`¡"${fileName}" exportado con éxito!`);
 
     } catch (error) {
-        console.error("Error durante la exportación mínima:", error);
+        console.error("Error durante la exportación:", error);
         alert("Ocurrió un error al intentar exportar. Revisa la consola.");
     }
 }
-
-
- 
